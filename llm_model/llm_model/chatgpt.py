@@ -214,14 +214,14 @@ class ChatGPTNode(Node):
         function_flag = 0: no function call, 1: function call
         """
         # Getting response information
-        message = chatgpt_response["choices"][0]["message"]
-        content = message.get("content")
-        function_call = message.get("function_call", None)
+        message = chatgpt_response.choices[0].message
+        content = message.content
+        function_call = message.function_call
 
         # Initializing function flag, 0: no function call, 1: function call
         function_flag = 0
 
-        # If the content is not None, then the response is text
+        # If the content is not None, th    en the response is text
         # If the content is None, then the response is function call
         if content is not None:
             function_flag = 0
@@ -359,13 +359,12 @@ def main(args=None):
     chatgpt = ChatGPTNode()
 
     messages = [
-        {"role": "user", "content": "write a haiku about ai"}
+        {"role": "user", "content": "Move the robot forward"}
     ]
 
     print(f"Config:{config.openai_model}")
     response = chatgpt.generate_chatgpt_response(messages_input=messages)
-    print(response)
-
+    chatgpt.get_response_information(response)
     rclpy.spin(chatgpt)
     rclpy.shutdown()
 
