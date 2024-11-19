@@ -44,15 +44,12 @@ from std_msgs.msg import String
 import json
 import os
 import time
-import openai
+from openai import OpenAI
 from llm_config.user_config import UserConfig
 
 
 # Global Initialization
 config = UserConfig()
-openai.api_key = config.openai_api_key
-# openai.organization = config.openai_organization
-
 
 class ChatGPTNode(Node):
     def __init__(self):
@@ -121,6 +118,9 @@ class ChatGPTNode(Node):
         # Initialization ready
         self.publish_string("llm_model_processing", self.initialization_publisher)
 
+        # OpenAI Client
+        self.client = OpenAI()
+
     def state_listener_callback(self, msg):
         self.get_logger().debug(f"model node get current State:{msg}")
         # TODO
@@ -178,11 +178,10 @@ class ChatGPTNode(Node):
         """
         # Log
         self.get_logger().info(f"Sending messages to OpenAI: {messages_input}")
-        response = openai.ChatCompletion.create(
+        response = self.client.chat.completions.create(
             model=config.openai_model,
             messages=messages_input,
-            functions=config.robot_functions_list,
-            function_call="auto",
+            tools=self.wrap_function_with_tool(config.robot_functions_list),
             # temperature=config.openai_temperature,
             # top_p=config.openai_top_p,
             # n=config.openai_n,
@@ -195,6 +194,18 @@ class ChatGPTNode(Node):
         # Log
         self.get_logger().info(f"OpenAI response: {response}")
         return response
+
+    #
+    #   Wrapping the functions with the tool abstraction for OpenAI compatiblity
+    #
+    def wrap_function_with_tool(self, function_list):
+        tools = []
+        for function in function_list:
+            tools.append({
+            "type": "function",
+            "function": function
+        })
+        return tools
 
     def get_response_information(self, chatgpt_response):
         """
@@ -346,6 +357,15 @@ class ChatGPTNode(Node):
 def main(args=None):
     rclpy.init(args=args)
     chatgpt = ChatGPTNode()
+
+    messages = [
+        {"role": "user", "content": "write a haiku about ai"}
+    ]
+
+    print(f"Config:{config.openai_model}")
+    response = chatgpt.generate_chatgpt_response(messages_input=messages)
+    print(response)
+
     rclpy.spin(chatgpt)
     rclpy.shutdown()
 

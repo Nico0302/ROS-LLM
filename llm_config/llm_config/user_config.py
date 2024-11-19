@@ -48,7 +48,7 @@ class UserConfig:
         # [required]: OpenAI API key
         self.openai_api_key = os.getenv("OPENAI_API_KEY")
         # [required]: Name of the OpenAI language model to be used
-        self.openai_model = "gpt-3.5-turbo-0613"
+        self.openai_model = "gpt-4o-mini"
         # self.openai_model="gpt-4-0613"
         # [optional]: Name of the organization under which the OpenAI API key is registered
         self.openai_organization = "Auromix"
