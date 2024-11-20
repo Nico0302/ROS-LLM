@@ -39,6 +39,7 @@ import rclpy
 from rclpy.node import Node
 from llm_interfaces.srv import ChatGPT
 from std_msgs.msg import String
+from pydantic import BaseModel
 
 # LLM related
 import json
@@ -214,9 +215,10 @@ class ChatGPTNode(Node):
         function_flag = 0: no function call, 1: function call
         """
         # Getting response information
-        message = chatgpt_response.choices[0].message
+        choice = chatgpt_response.choices[0]
+        message = choice.message
         content = message.content
-        function_call = message.function_call
+        function_call = message.tool_calls
 
         # Initializing function flag, 0: no function call, 1: function call
         function_flag = 0
@@ -242,13 +244,27 @@ class ChatGPTNode(Node):
 
         return message, content, function_call, function_flag
 
+    def jsonify_objects(self, chat_history):
+        # Convert Pydantic models to dictionaries using their .dict() method
+        def custom_serializer(obj):
+            if isinstance(obj, BaseModel):
+                return obj.dict()  # Pydantic models can be converted to dictionaries
+            elif isinstance(obj, list):
+                return [custom_serializer(item) for item in obj]
+            elif isinstance(obj, dict):
+                return {key: custom_serializer(value) for key, value in obj.items()}
+            return obj  # Return the object as is if it's a basic type (str, int, etc.)
+
+        # Serialize the data using the custom serializer
+        return json.dumps(custom_serializer(chat_history), indent=2)
+
     def write_chat_history_to_json(self):
         """
         Write the chat history to a JSON file.
         """
         try:
             # Converting chat history to JSON string
-            json_data = json.dumps(config.chat_history)
+            json_data = self.jsonify_objects(config.chat_history)
 
             # Writing JSON to file
             with open(self.chat_history_file, "w", encoding="utf-8") as file:
@@ -262,22 +278,27 @@ class ChatGPTNode(Node):
             self.get_logger().error(f"Error writing chat history to JSON: {error}")
             return False
 
-    def function_call(self, function_call_input):
+    def function_call(self, tool_call_input):
         """
         Sends a function call request with the given input and waits for the response.
         When the response is received, the function call response callback is called.
         """
-        # JSON object to string
-        function_call_input_str = json.dumps(function_call_input)
-        # Get function name
-        self.function_name = function_call_input["name"]
-        # Send function call request
-        self.function_call_requst.request_text = function_call_input_str
-        self.get_logger().info(
-            f"Request for ChatGPT_function_call_service: {self.function_call_requst.request_text}"
-        )
-        future = self.function_call_client.call_async(self.function_call_requst)
-        future.add_done_callback(self.function_call_response_callback)
+
+        for tool in tool_call_input:
+            if tool.type == 'function':
+
+                function = tool.function
+
+                # Get function name
+                self.function_name = function.name
+                # Send function call request
+                self.function_call_requst.request_text = self.jsonify_objects(function)
+                self.get_logger().info(
+                    f"Request for ChatGPT_function_call_service: {self.function_call_requst.request_text}"
+                )
+                future = self.function_call_client.call_async(self.function_call_requst)
+                future.add_done_callback(self.function_call_response_callback)
+
 
     def function_call_response_callback(self, future):
         """
@@ -358,13 +379,11 @@ def main(args=None):
     rclpy.init(args=args)
     chatgpt = ChatGPTNode()
 
-    messages = [
-        {"role": "user", "content": "Move the robot forward"}
-    ]
-
-    print(f"Config:{config.openai_model}")
-    response = chatgpt.generate_chatgpt_response(messages_input=messages)
-    chatgpt.get_response_information(response)
+    msg = String()
+    msg.data = "Move the robot forward"
+    chatgpt.llm_callback(msg)
+    print("done")
+    
     rclpy.spin(chatgpt)
     rclpy.shutdown()
 
