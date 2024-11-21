@@ -106,6 +106,11 @@ ros2 topic pub /llm_state std_msgs/msg/String "data: 'listening'" -1
 
 To use the framework with your own robot, modify the `llm_robot` and `llm_config` packages to suit your robot's specifications. This allows you to customize the behavior of your robot.
 
+## Create a New Subpackage and Node
+
+```bash
+ros2 pkg create --build-type ament_python --license Apache-2.0 --node-name Nav2LLM llm_nav2
+```
 
 ## 🧑‍💻 Future Development Plans
 
