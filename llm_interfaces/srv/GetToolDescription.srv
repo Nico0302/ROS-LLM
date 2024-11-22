@@ -1,0 +1,3 @@
+# List all available tools in the Open AI tool description format
+---
+string tools # Tools in Open AI tool description format as JSON string

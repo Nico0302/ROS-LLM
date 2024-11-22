@@ -19,6 +19,8 @@ find_package(rosidl_default_generators REQUIRED)
 rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/ChatGPT.msg"
   "srv/ChatGPT.srv"
+  "srv/CallTool.srv"
+  "srv/GetToolDescription.srv"
  )
 
 if(BUILD_TESTING)

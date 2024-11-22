@@ -1,22 +1,46 @@
 from rosidl_adapter import parser
-from rosidl_runtime_py import get_interface_path
+from llm_tools.converters.base import BaseConverter
+from llm_tools.tool import Tool
+from llm_tools.service import Service
 import copy
+import json
+                                                                            
 
-"""
-Converts a ROS service specification into a openai function definition.
-"""
-class DefinitionGenerator:
+class OpenAIConverter(BaseConverter):
     """
-    Generates a JSON Schema function definition from a ROS srv interface.
+    Converts a ROS service specification into a openai function definition.
     """
+
+    def get_names(self, tools):
+        """
+        Generates dialect conform names for a list of tools.
+        """
+        tools_dict = {}
+        print(tools)
+        for tool in tools:
+            name = None
+            print(tool)
+            if isinstance(tool, Service):
+                name = tool.name[1:60].replace("/", "_").replace(" ", "_")
+            # TODO: fix collitons
+            tools_dict[name] = tool
+        return tools_dict
+
+    def get_definition(self, tools: dict[str, Tool]) -> str:
+        """
+        Converts a tool list into a tool definition for a specifc dialect.
+        """
+        tool_definitions = []
+        for name, tool in tools.items():
+            if isinstance(tool, Service):
+                tool_definitions.append(self.convert_service(tool.type, name))
+        return json.dumps(tool_definitions)
     
     def convert_type(self, type: parser.Type | parser.MessageSpecification):
         """
         Converts a ROS type into a openai type.
         """
-        if isinstance(type, parser.ServiceSpecification):
-            return self.convert_service(type)
-        elif isinstance(type, parser.MessageSpecification):
+        if isinstance(type, parser.MessageSpecification):
             return self.convert_message(type)
         elif type.is_array:
             return self.convert_array_type(type)
@@ -64,9 +88,14 @@ class DefinitionGenerator:
         """
         Converts a ROS field into a openai field.
         """
-        return [field.name, self.convert_type(field.type) | self._get_description(field)] 
+        return [
+            field.name, 
+            self.convert_type(field.type) | 
+            self._get_description(field) | 
+            ({ "default": field.default_value } if field.default_value is not None else {})
+        ] 
     
-    def convert_message(self, spec: parser.MessageSpecification | str):
+    def convert_message(self, spec: parser.MessageSpecification | str, parseDescription: bool = True):
         """
         Converts a ROS message specification into a openai message definition.
         """
@@ -76,22 +105,24 @@ class DefinitionGenerator:
         for field in spec.fields:
             [name, definiton] = self.convert_field(field)
             properties[name] = definiton
-        return { "type": "object", "properties": properties } | self._get_description(spec)
+        return { "type": "object", "properties": properties } | (self._get_description(spec) if parseDescription else {})
     
-    def convert_service(self, spec: parser.ServiceSpecification | str):
+    def convert_service(self, spec: parser.ServiceSpecification | str, name: str = None):
         """
         Converts a ROS service specification into a openai function definition.
         """
         if isinstance(spec, str):
             spec = parser.parse_service_file(*self._get_interface_path(spec))
-        request = self.convert_message(spec.request)
+        request = self.convert_message(spec.request, False)
+        
         function = { 
-            "name": spec.srv_name,
+            "name": spec.srv_name if name is None else name,
             "parameters": request,
-        } | self._get_description(spec.request),
+        } | self._get_description(spec.request)
+    
         return {
-            "type": "function",
-            "function": function
+            'type': 'function',
+            'function': function
         }
     
     def _get_description(self, spec):
@@ -101,14 +132,10 @@ class DefinitionGenerator:
         if "comment" in spec.annotations and len(spec.annotations["comment"]) > 0:
             return { "description": "\n".join(spec.annotations["comment"]) }
         return {}
-
-    def _get_interface_path(self, interface_name: str):
-        [package, _, _] = interface_name.rsplit("/")
-        return [package, get_interface_path(interface_name)]
     
 
 def main():
-    converter = DefinitionGenerator()
+    converter = OpenAIConverter()
     interface_name = "geometry_msgs/msg/Twist"
     print(converter.convert_message(interface_name))
 
