@@ -1,3 +1,4 @@
 # List all available tools in the Open AI tool description format
+std_msgs/Empty result
 ---
 string tools # Tools in Open AI tool description format as JSON string

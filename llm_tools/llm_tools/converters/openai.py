@@ -16,10 +16,8 @@ class OpenAIConverter(BaseConverter):
         Generates dialect conform names for a list of tools.
         """
         tools_dict = {}
-        print(tools)
         for tool in tools:
             name = None
-            print(tool)
             if isinstance(tool, Service):
                 name = tool.name[1:60].replace("/", "_").replace(" ", "_")
             # TODO: fix collitons

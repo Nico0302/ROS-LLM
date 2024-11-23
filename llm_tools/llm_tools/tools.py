@@ -33,9 +33,15 @@ class Tools(Node):
         response.description = self._discover()
         return response
 
-    def _discover(self):
+    def _discover(self, include_rules=list[str]):
         for node_name in self.get_node_names():
             services = Service.discover(self, node_name, '/')
+            # apply rules
+            if include_rules:
+                services = [
+                    service for service in services
+                    if service.name in include_rules
+                ]
             # add new services to the tools
             self.tools.update(
                 self.converter.get_names(
@@ -53,7 +59,11 @@ class Tools(Node):
 def main():
     rclpy.init()
     tools = Tools()
-    print(json.dumps(json.loads(tools._discover()), indent=2))
+    # wait for node to initialize
+    rclpy.spin_once(tools, timeout_sec=1)
+    with open('tools.json', 'w') as f:
+        json.dump(json.loads(tools._discover()), f, indent=4)
+
     tools.destroy_node()
     rclpy.shutdown()
 

@@ -1,6 +1,8 @@
 import rclpy
+import rclpy.exceptions
 from rclpy.node import Node
 from rosidl_runtime_py import set_message_fields
+from rclpy.topic_or_service_is_hidden import topic_or_service_is_hidden
 from llm_tools.tool import Tool
 import importlib
 
@@ -43,9 +45,16 @@ class Service(Tool):
     @staticmethod
     def discover(node: Node, node_name: str, node_namespace: str):
         tools = []
-        for [service_name, types] in node.get_service_names_and_types_by_node(node_name, node_namespace):
+        services = []
+        try:
+            services = node.get_service_names_and_types_by_node(node_name, node_namespace)
+        except:
+            pass
+        for [service_name, types] in services:
             if not isinstance(types, list):
                 types = [types]
             for service_type in types:
+                if topic_or_service_is_hidden(service_name):
+                    continue
                 tools.append(Service(service_name, service_type))
         return tools
