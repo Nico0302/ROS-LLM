@@ -40,12 +40,14 @@ from rclpy.node import Node
 from llm_interfaces.srv import ChatGPT
 from std_msgs.msg import String
 from pydantic import BaseModel
+from typing import Any
 
 # LLM related
 import json
 import os
 import time
 from openai import OpenAI
+import openai
 from llm_config.user_config import UserConfig
 
 
@@ -136,7 +138,7 @@ class ChatGPTNode(Node):
         )
 
     def add_message_to_history(
-        self, role, content="null", function_call=None, name=None
+        self, role, content="", tool_call_id=None, name=None
     ):
         """
         Add a new message_element_object to the chat history
@@ -150,18 +152,26 @@ class ChatGPTNode(Node):
         # Creating message dictionary with given options
         message_element_object = {
             "role": role,
-            "content": content,
+            "content": content
         }
+
+        if content == None:
+            message_element_object['content'] = ""
+
         # Adding function call information if provided
+        if tool_call_id is not None:
+            message_element_object['tool_call_id'] = tool_call_id
+
+        # Function name
         if name is not None:
-            message_element_object["name"] = name
-        # Adding function call information if provided
-        if function_call is not None:
-            message_element_object["function_call"] = function_call
+            message_element_object['name'] = name
+
         # Adding message_element_object to chat history
         config.chat_history.append(message_element_object)
+
         # Log
         self.get_logger().info(f"Chat history updated with {message_element_object}")
+
         # Checking if chat history is too long
         if len(config.chat_history) > config.chat_history_max_length:
             self.get_logger().info(
@@ -179,6 +189,7 @@ class ChatGPTNode(Node):
         """
         # Log
         self.get_logger().info(f"Sending messages to OpenAI: {messages_input}")
+
         response = self.client.chat.completions.create(
             model=config.openai_model,
             messages=messages_input,
@@ -223,7 +234,7 @@ class ChatGPTNode(Node):
         # Initializing function flag, 0: no function call, 1: function call
         function_flag = 0
 
-        # If the content is not None, th    en the response is text
+        # If the content is not None, then the response is text
         # If the content is None, then the response is function call
         if content is not None:
             function_flag = 0
@@ -244,27 +255,40 @@ class ChatGPTNode(Node):
 
         return message, content, function_call, function_flag
 
-    def jsonify_objects(self, chat_history):
-        # Convert Pydantic models to dictionaries using their .dict() method
-        def custom_serializer(obj):
-            if isinstance(obj, BaseModel):
-                return obj.dict()  # Pydantic models can be converted to dictionaries
-            elif isinstance(obj, list):
-                return [custom_serializer(item) for item in obj]
-            elif isinstance(obj, dict):
-                return {key: custom_serializer(value) for key, value in obj.items()}
-            return obj  # Return the object as is if it's a basic type (str, int, etc.)
-
-        # Serialize the data using the custom serializer
-        return json.dumps(custom_serializer(chat_history), indent=2)
-
+    def flatten_pydantic(self, data: Any) -> Any:
+        """
+        Recursively flattens Pydantic models into regular JSON dictionaries.
+        
+        Args:
+        - data: The data structure to be flattened, which may contain Pydantic models, dictionaries, lists, or other data types.
+        
+        Returns:
+        - A flattened version of the data, with all Pydantic models converted to dictionaries.
+        """
+        
+        # If the data is a Pydantic model, convert it to a dictionary
+        if isinstance(data, BaseModel):
+            return data.model_dump_json()
+        
+        # If the data is a dictionary, recursively flatten each value
+        elif isinstance(data, dict):
+            return {key: self.flatten_pydantic(value) for key, value in data.items()}
+        
+        # If the data is a list, recursively flatten each element
+        elif isinstance(data, list):
+            return [self.flatten_pydantic(item) for item in data]
+        
+        # If the data is not a Pydantic model, dictionary, or list, return it as is
+        else:
+            return data
+        
     def write_chat_history_to_json(self):
         """
         Write the chat history to a JSON file.
         """
         try:
             # Converting chat history to JSON string
-            json_data = self.jsonify_objects(config.chat_history)
+            json_data = json.dumps(config.chat_history)
 
             # Writing JSON to file
             with open(self.chat_history_file, "w", encoding="utf-8") as file:
@@ -283,22 +307,22 @@ class ChatGPTNode(Node):
         Sends a function call request with the given input and waits for the response.
         When the response is received, the function call response callback is called.
         """
-
         for tool in tool_call_input:
+            self.get_logger().info(f"Calling tool: {tool}")
             if tool.type == 'function':
 
                 function = tool.function
 
                 # Get function name
                 self.function_name = function.name
+                
                 # Send function call request
-                self.function_call_requst.request_text = self.jsonify_objects(function)
+                self.function_call_requst.request_text = function.model_dump_json()
                 self.get_logger().info(
                     f"Request for ChatGPT_function_call_service: {self.function_call_requst.request_text}"
                 )
                 future = self.function_call_client.call_async(self.function_call_requst)
                 future.add_done_callback(self.function_call_response_callback)
-
 
     def function_call_response_callback(self, future):
         """
@@ -315,19 +339,18 @@ class ChatGPTNode(Node):
         except Exception as e:
             self.get_logger().info(f"ChatGPT function call service failed {e}")
 
-        response_text = "null"
         self.add_message_to_history(
             role="function",
             name=self.function_name,
-            content=str(response_text),
+            content=self.function_call_requst.request_text,
         )
         # Generate chat completion
-        second_chatgpt_response = self.generate_chatgpt_response(config.chat_history)
-        # Get response information
-        message, text, function_call, function_flag = self.get_response_information(
-            second_chatgpt_response
-        )
-        self.publish_string(text, self.llm_feedback_publisher)
+        # second_chatgpt_response = self.generate_chatgpt_response(config.chat_history)
+        # # Get response information
+        # message, text, function_call, function_flag = self.get_response_information(
+        #     second_chatgpt_response
+        # )
+        # self.publish_string(text, self.llm_feedback_publisher)
 
     def llm_callback(self, msg):
         """
@@ -344,13 +367,19 @@ class ChatGPTNode(Node):
         # Generate chat completion
         chatgpt_response = self.generate_chatgpt_response(config.chat_history)
         # Get response information
-        message, text, function_call, function_flag = self.get_response_information(
+        message, text, tool_call, function_flag = self.get_response_information(
             chatgpt_response
         )
         # Append response to chat history
-        self.add_message_to_history(
-            role="assistant", content=text, function_call=function_call
-        )
+        if function_flag:
+            for tool in tool_call:
+                self.add_message_to_history(
+                    role="assistant", content=tool.function.arguments, tool_call_id=tool.id, 
+                )
+        else:
+            self.add_message_to_history(
+                role="assistant", content=text
+            )
         # Write chat history to JSON
         self.write_chat_history_to_json()
 
@@ -364,7 +393,7 @@ class ChatGPTNode(Node):
             # Robot function call
             # Log function execution
             self.get_logger().info("STATE: function_execution")
-            self.function_call(function_call)
+            self.function_call(tool_call)
         else:
             # Return text response
             llm_response_type = "feedback_for_user"
@@ -378,12 +407,6 @@ class ChatGPTNode(Node):
 def main(args=None):
     rclpy.init(args=args)
     chatgpt = ChatGPTNode()
-
-    msg = String()
-    msg.data = "Move the robot forward"
-    chatgpt.llm_callback(msg)
-    print("done")
-    
     rclpy.spin(chatgpt)
     rclpy.shutdown()
 
