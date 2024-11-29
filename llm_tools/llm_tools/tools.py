@@ -1,58 +1,62 @@
-from llm_tools.converters.base import BaseConverter
 from llm_tools.service import Service
-from llm_tools.converters.openai import OpenAIConverter
+from llm_tools.filter import Filter, NameFilter
+from llm_tools.converters import Converter, OpenAIConverter
 import rclpy
 from rclpy.node import Node
 from llm_interfaces.srv import CallTool
-from llm_interfaces.srv import GetToolDescription
-from llm_tools.tool import Tool
+from llm_interfaces.srv import GetToolDescriptions
+import llm_tools.tool
 import json
 
 class Tools(Node):
 
-    tools: dict[str, Tool]
-
-    converter: BaseConverter
+    tools: dict[str, llm_tools.tool.Tool]
 
     def __init__(self):
         super().__init__('llm_tools')
+
         self.tools = {}
-        self.converter = OpenAIConverter()
+
+        self.declare_parameter('include_services', [])
+        self.declare_parameter('exclude_services', [])
+
         self.call_srv = self.create_service(CallTool, 'call_tool', self.call_tool)
-        self.description_srv = self.create_service(GetToolDescription, 'get_tool_description', self.get_tool_description)
+        self.description_srv = self.create_service(GetToolDescriptions, 'get_tool_descriptions', self.get_tool_descriptions)
 
     def call_tool(self, request, response):
-        [type, rest] = request.name.split(':', 1)
-        if type == 'srv':
-            [service_name, service_type] = rest.split(':', 1)
-            response.parameters = json.dumps(self._call_service(service_type, service_name, request.parameters), indent=2)
-
+        response.paramaters = self._call(request.name, json.loads(request.parameters))
         return response
 
-    def get_tool_description(self, request, response):
-        response.description = self._discover()
+    def get_tool_descriptions(self, request, response):
+        include_services = self.get_parameter('include_services').get_parameter_value().string_array_value
+        exclude_services = self.get_parameter('exclude_services').get_parameter_value().string_array_value
+
+        filter = NameFilter(include_services, exclude_services) # type: ignore
+        converter = OpenAIConverter()
+
+        response.description = self._discover(
+            filter, converter,
+            node_namespace = request.node_namespace
+        )
         return response
 
-    def _discover(self, include_rules=list[str]):
+    def _discover(self, filter: Filter, converter: Converter, node_namespace = None):
+        if not node_namespace:
+            node_namespace = self.get_namespace()
+        tools: list[llm_tools.tool.Tool] = []
         for node_name in self.get_node_names():
-            services = Service.discover(self, node_name, '/')
-            # apply rules
-            if include_rules:
-                services = [
-                    service for service in services
-                    if service.name in include_rules
-                ]
-            # add new services to the tools
-            self.tools.update(
-                self.converter.get_names(
-                    services
-                )
-            )
-        self.get_logger().info(f'Discovered {len(self.tools)} tools')
-        return self.converter.get_definition(self.tools)
+            tools += Service.discover(self, node_name, node_namespace)
+
+        tools = filter.filter_tools(tools)
+
+        for tool in tools:
+            for name in tool.get_names():
+                self.tools[name] = tool
+
+        return converter.convert_tools(tools)
     
-    def _get_function_name(self, service_name, service_type):
-        return f"srv:{service_name}:{service_type}"
+    def _call(self, name, parameters):
+        return self.tools[name].call(self, parameters)
 
 
 

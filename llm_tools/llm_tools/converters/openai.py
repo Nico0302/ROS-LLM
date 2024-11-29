@@ -1,38 +1,26 @@
+from typing import Optional
 from rosidl_adapter import parser
-from llm_tools.converters.base import BaseConverter
+from llm_tools.converters.converter import Converter
 from llm_tools.tool import Tool
-from llm_tools.service import Service
 import copy
 import json
                                                                             
-
-class OpenAIConverter(BaseConverter):
+class OpenAIConverter(Converter):
     """
     Converts a ROS service specification into a openai function definition.
     """
 
-    def get_names(self, tools):
-        """
-        Generates dialect conform names for a list of tools.
-        """
-        tools_dict = {}
-        for tool in tools:
-            name = None
-            if isinstance(tool, Service):
-                name = tool.name[1:60].replace("/", "_").replace(" ", "_")
-            # TODO: fix collitons
-            tools_dict[name] = tool
-        return tools_dict
-
-    def get_definition(self, tools: dict[str, Tool]) -> str:
-        """
-        Converts a tool list into a tool definition for a specifc dialect.
-        """
+    def convert_tools(self, tools: list[Tool]) -> str:
         tool_definitions = []
-        for name, tool in tools.items():
-            if isinstance(tool, Service):
-                tool_definitions.append(self.convert_service(tool.type, name))
+        for tool in tools:
+            tool_definitions.append(tool.accept(self))
         return json.dumps(tool_definitions)
+
+    def visit_service(self, service):
+        """
+        Accepts a service and converts it into a openai function definition.
+        """
+        return self.convert_service(service.type, service.get_names()[0])
     
     def convert_type(self, type: parser.Type | parser.MessageSpecification):
         """
@@ -46,7 +34,7 @@ class OpenAIConverter(BaseConverter):
             return self.convert_primitive_type(type)
         else:
             # load the external message specification
-            return self.convert_message(type.pkg_name + "/msg/" + type.type)
+            return self.convert_message((type.pkg_name or "") + "/msg/" + type.type)
         
     def convert_primitive_type(self, type: parser.Type):
         """
@@ -105,7 +93,7 @@ class OpenAIConverter(BaseConverter):
             properties[name] = definiton
         return { "type": "object", "properties": properties } | (self._get_description(spec) if parseDescription else {})
     
-    def convert_service(self, spec: parser.ServiceSpecification | str, name: str = None):
+    def convert_service(self, spec: parser.ServiceSpecification | str, name: Optional[str] = None):
         """
         Converts a ROS service specification into a openai function definition.
         """
