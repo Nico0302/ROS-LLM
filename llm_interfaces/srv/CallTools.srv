@@ -1,0 +1,5 @@
+# Call multiple tools and execute them in sequence
+
+ToolCall[] tools    # List of tool calls
+---
+string[] outputs    # Tool outputs as JSON string

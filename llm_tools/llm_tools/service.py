@@ -21,7 +21,7 @@ class Service(llm_tools.tool.Tool):
         self.request = self.srv_module.Request()
 
     def get_names(self):
-        return [self.name[1:60].replace("/", "_").replace(" ", "_")]
+        return [self.name[1:60].replace("/", "-").replace(" ", "_")]
     
     def call(self, node: Node, values: dict) -> Future:
         node.get_logger().info(f'Calling service {self.name} of type {self.type}')

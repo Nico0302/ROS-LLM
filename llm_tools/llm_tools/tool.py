@@ -3,11 +3,9 @@ from rclpy.task import Future
 from rclpy.node import Node
 from abc import ABC, abstractmethod
 
-import llm_tools.service
-
 class ToolVisitor(ABC):
     @abstractmethod
-    def visit_service(self, service: llm_tools.service.Service) -> Any:
+    def visit_service(self, service) -> Any:
         pass
 
 class Tool(ABC):
