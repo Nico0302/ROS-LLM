@@ -37,7 +37,7 @@
 # ROS related
 import rclpy
 from rclpy.node import Node
-from llm_interfaces.srv import ChatGPT
+from llm_interfaces.srv import CallTool
 from std_msgs.msg import String
 from pydantic import BaseModel
 
@@ -83,16 +83,16 @@ class ChatGPTNode(Node):
         # ChatGPT function call client
         # When function call is detected
         # ChatGPT client will call function call service in robot node
-        self.function_call_client = self.create_client(
-            ChatGPT, "/ChatGPT_function_call_service"
+        self.tool_call_client = self.create_client(
+            CallTool, "/call_tool"
         )
         # self.function_call_future = None
         # Wait for function call server to be ready
-        # while not self.function_call_client.wait_for_service(timeout_sec=1.0):
-        #     self.get_logger().info(
-        #         "ChatGPT Function Call Server(ROBOT NODE) not available, waiting again..."
-        #     )
-        self.function_call_requst = ChatGPT.Request()  # Function call request
+        while not self.tool_call_client.wait_for_service(timeout_sec=1.0):
+            self.get_logger().info(
+                "ChatGPT Tool Server not available, waiting again..."
+            )
+        self.tool_call_requst = CallTool.Request()  # Function call request
         self.get_logger().info("ChatGPT Function Call Server is ready")
 
         # ChatGPT output publisher
@@ -290,35 +290,36 @@ class ChatGPTNode(Node):
                 function = tool.function
 
                 # Get function name
-                self.function_name = function.name
+                function_name = function.name
                 # Send function call request
-                self.function_call_requst.request_text = self.jsonify_objects(function)
+                self.tool_call_requst.tool.parameters = self.jsonify_objects(function.parameters)
                 self.get_logger().info(
-                    f"Request for ChatGPT_function_call_service: {self.function_call_requst.request_text}"
+                    f"Request for ChatGPT_function_call_service: {self.tool_call_requst.tool.parameters}"
                 )
-                future = self.function_call_client.call_async(self.function_call_requst)
-                future.add_done_callback(self.function_call_response_callback)
+                future = self.tool_call_client.call_async(self.tool_call_requst)
+                future.add_done_callback(lambda callback: self.function_call_response_callback(callback, function_name))
 
 
-    def function_call_response_callback(self, future):
+    def function_call_response_callback(self, future, function_name):
         """
         The function call response callback is called when the function call response is received.
         the function_call_response_callback will call the gpt service again
         to get the text response to user
         """
+        response_text = "null"
         try:
             response = future.result()
             self.get_logger().info(
                 f"Response from ChatGPT_function_call_service: {response}"
             )
+            response_text = response.output
 
         except Exception as e:
             self.get_logger().info(f"ChatGPT function call service failed {e}")
 
-        response_text = "null"
         self.add_message_to_history(
             role="function",
-            name=self.function_name,
+            name=function_name,
             content=str(response_text),
         )
         # Generate chat completion

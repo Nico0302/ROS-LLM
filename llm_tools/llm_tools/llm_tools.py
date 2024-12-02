@@ -16,7 +16,7 @@ class Tools(Node):
     tools: dict[str, llm_tools.tool.Tool]
 
     def __init__(self):
-        super().__init__('llm_tools')
+        super().__init__('llm_tool_server')
 
         self.tools = {}
 
