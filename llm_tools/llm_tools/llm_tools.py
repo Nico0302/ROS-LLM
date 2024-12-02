@@ -3,12 +3,15 @@ from llm_tools.filter import Filter, NameFilter
 from llm_tools.converters import Converter, OpenAIConverter
 import rclpy
 from rclpy.node import Node
-from llm_interfaces.srv import CallTools
+from llm_interfaces.srv import CallTool
 from llm_interfaces.srv import GetToolDescriptions
 import llm_tools.tool
 import json
 
 class Tools(Node):
+    """
+    A ROS 2 node that provides a service to call tools and a service to get tool descriptions.
+    """
 
     tools: dict[str, llm_tools.tool.Tool]
 
@@ -20,13 +23,11 @@ class Tools(Node):
         self.declare_parameter('include_services', [])
         self.declare_parameter('exclude_services', [])
 
-        self.call_srv = self.create_service(CallTools, 'call_tools', self.call_tools)
+        self.call_srv = self.create_service(CallTool, 'call_tool', self.call_tool)
         self.description_srv = self.create_service(GetToolDescriptions, 'get_tool_descriptions', self.get_tool_descriptions)
 
-    def call_tools(self, request: CallTools.Request, response: CallTools.Response):
-        response.outputs = []
-        for tool in request.tools:
-            response.outputs.append(json.dumps(self._call(tool.name, json.loads(tool.parameters)), indent=2))
+    def call_tool(self, request: CallTool.Request, response: CallTool.Response):
+        response.output = json.dumps(self._call(request.tool.name, json.loads(request.tool.parameters)), indent=2)
         return response
 
     def get_tool_descriptions(self, request: GetToolDescriptions.Request, response: GetToolDescriptions.Response):
@@ -57,7 +58,7 @@ class Tools(Node):
 
         return converter.convert_tools(tools)
     
-    def _call(self, name, parameters):
+    def _call(self, name: str, parameters: dict):
         return self._wait_for_response(self.tools[name].call(self, parameters))
     
     def _wait_for_response(self, future):

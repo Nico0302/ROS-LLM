@@ -20,7 +20,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/ChatGPT.msg"
   "msg/ToolCall.msg"
   "srv/ChatGPT.srv"
-  "srv/CallTools.srv"
+  "srv/CallTool.srv"
   "srv/GetToolDescriptions.srv"
  )
 

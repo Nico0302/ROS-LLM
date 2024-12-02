@@ -5,7 +5,7 @@ from llm_tools.llm_tools import Tools
 import rclpy
 
 
-def test_call_tools():
+def test_call_tool():
     rclpy.init()
     tools = Tools()
     # wait for node to initialize
