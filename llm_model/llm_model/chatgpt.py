@@ -37,7 +37,7 @@
 # ROS related
 import rclpy
 from rclpy.node import Node
-from llm_interfaces.srv import CallTool
+from llm_interfaces.srv import CallTool, GetToolDescriptions
 from std_msgs.msg import String
 from pydantic import BaseModel
 
@@ -80,6 +80,25 @@ class ChatGPTNode(Node):
         self.llm_feedback_publisher = self.create_publisher(
             String, "/llm_feedback_to_user", 0
         )
+
+        self.tools = []
+
+        self.get_tool_descriptions_client = self.create_client(
+            GetToolDescriptions, "/get_tool_descriptions_client"
+        )
+        while not self.get_tool_descriptions_client.wait_for_service(timeout_sec=1.0):
+            self.get_logger().info(
+                "ChatGPT Tool Description Server not available, waiting again..."
+            )
+        self.get_tool_descriptions_request = GetToolDescriptions.Request()
+
+        self.get_tool_descriptions_future = self.get_tool_descriptions_client.call_async(
+            self.get_tool_descriptions_request
+        )
+        self.get_tool_descriptions_future.add_done_callback(self.get_tool_descriptions_callback)
+
+
+
         # ChatGPT function call client
         # When function call is detected
         # ChatGPT client will call function call service in robot node
@@ -121,6 +140,13 @@ class ChatGPTNode(Node):
 
         # OpenAI Client
         self.client = OpenAI()
+
+    def get_tool_descriptions_callback(self, future):
+        try:
+            response = future.result()
+            self.tools = response.tools
+        except Exception as e:
+            self.get_logger().info(f"Get tool descriptions failed: {e}")
 
     def state_listener_callback(self, msg):
         self.get_logger().debug(f"model node get current State:{msg}")
@@ -182,7 +208,7 @@ class ChatGPTNode(Node):
         response = self.client.chat.completions.create(
             model=config.openai_model,
             messages=messages_input,
-            tools=self.wrap_function_with_tool(config.robot_functions_list),
+            tools=self.tools,
             # temperature=config.openai_temperature,
             # top_p=config.openai_top_p,
             # n=config.openai_n,
@@ -195,18 +221,6 @@ class ChatGPTNode(Node):
         # Log
         self.get_logger().info(f"OpenAI response: {response}")
         return response
-
-    #
-    #   Wrapping the functions with the tool abstraction for OpenAI compatiblity
-    #
-    def wrap_function_with_tool(self, function_list):
-        tools = []
-        for function in function_list:
-            tools.append({
-            "type": "function",
-            "function": function
-        })
-        return tools
 
     def get_response_information(self, chatgpt_response):
         """
