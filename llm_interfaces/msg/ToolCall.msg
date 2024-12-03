@@ -3,4 +3,4 @@ uint8 type              # Tool type
 
 string name             # Tool name
 
-string parameters       # Tool parameters as JSON string
+string arguments        # Tool parameters as JSON string
