@@ -1,0 +1,5 @@
+# Call multiple tools and execute them in sequence
+
+ToolCall tool
+---
+string output

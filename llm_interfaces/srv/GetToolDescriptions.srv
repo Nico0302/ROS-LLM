@@ -1,0 +1,4 @@
+# List all available tools in the Open AI tool description format
+string node_namespace # (optional) Defaults to the tool node namepsace
+---
+string tools # Tools in Open AI tool description format as JSON string

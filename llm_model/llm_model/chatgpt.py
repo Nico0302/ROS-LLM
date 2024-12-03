@@ -37,7 +37,7 @@
 # ROS related
 import rclpy
 from rclpy.node import Node
-from llm_interfaces.srv import ChatGPT
+from llm_interfaces.srv import CallTool, GetToolDescriptions
 from std_msgs.msg import String
 from pydantic import BaseModel
 from typing import Any
@@ -82,19 +82,38 @@ class ChatGPTNode(Node):
         self.llm_feedback_publisher = self.create_publisher(
             String, "/llm_feedback_to_user", 0
         )
+
+        self.tools = []
+
+        self.get_tool_descriptions_client = self.create_client(
+            GetToolDescriptions, "/get_tool_descriptions_client"
+        )
+        while not self.get_tool_descriptions_client.wait_for_service(timeout_sec=1.0):
+            self.get_logger().info(
+                "ChatGPT Tool Description Server not available, waiting again..."
+            )
+        self.get_tool_descriptions_request = GetToolDescriptions.Request()
+
+        self.get_tool_descriptions_future = self.get_tool_descriptions_client.call_async(
+            self.get_tool_descriptions_request
+        )
+        self.get_tool_descriptions_future.add_done_callback(self.get_tool_descriptions_callback)
+
+
+
         # ChatGPT function call client
         # When function call is detected
         # ChatGPT client will call function call service in robot node
-        self.function_call_client = self.create_client(
-            ChatGPT, "/ChatGPT_function_call_service"
+        self.tool_call_client = self.create_client(
+            CallTool, "/call_tool"
         )
         # self.function_call_future = None
         # Wait for function call server to be ready
-        # while not self.function_call_client.wait_for_service(timeout_sec=1.0):
-        #     self.get_logger().info(
-        #         "ChatGPT Function Call Server(ROBOT NODE) not available, waiting again..."
-        #     )
-        self.function_call_requst = ChatGPT.Request()  # Function call request
+        while not self.tool_call_client.wait_for_service(timeout_sec=1.0):
+            self.get_logger().info(
+                "ChatGPT Tool Server not available, waiting again..."
+            )
+        self.tool_call_requst = CallTool.Request()  # Function call request
         self.get_logger().info("ChatGPT Function Call Server is ready")
 
         # ChatGPT output publisher
@@ -123,6 +142,13 @@ class ChatGPTNode(Node):
 
         # OpenAI Client
         self.client = OpenAI()
+
+    def get_tool_descriptions_callback(self, future):
+        try:
+            response = future.result()
+            self.tools = response.tools
+        except Exception as e:
+            self.get_logger().info(f"Get tool descriptions failed: {e}")
 
     def state_listener_callback(self, msg):
         self.get_logger().debug(f"model node get current State:{msg}")
@@ -193,7 +219,7 @@ class ChatGPTNode(Node):
         response = self.client.chat.completions.create(
             model=config.openai_model,
             messages=messages_input,
-            tools=self.wrap_function_with_tool(config.robot_functions_list),
+            tools=self.tools,
             # temperature=config.openai_temperature,
             # top_p=config.openai_top_p,
             # n=config.openai_n,
@@ -206,18 +232,6 @@ class ChatGPTNode(Node):
         # Log
         self.get_logger().info(f"OpenAI response: {response}")
         return response
-
-    #
-    #   Wrapping the functions with the tool abstraction for OpenAI compatiblity
-    #
-    def wrap_function_with_tool(self, function_list):
-        tools = []
-        for function in function_list:
-            tools.append({
-            "type": "function",
-            "function": function
-        })
-        return tools
 
     def get_response_information(self, chatgpt_response):
         """
@@ -314,35 +328,37 @@ class ChatGPTNode(Node):
                 function = tool.function
 
                 # Get function name
-                self.function_name = function.name
-                
+                function_name = function.name
                 # Send function call request
-                self.function_call_requst.request_text = function.model_dump_json()
+                self.tool_call_requst.tool.arguments = function.arguments
                 self.get_logger().info(
-                    f"Request for ChatGPT_function_call_service: {self.function_call_requst.request_text}"
+                    f"Request for ChatGPT_function_call_service: {self.tool_call_requst.tool.arguments}"
                 )
-                future = self.function_call_client.call_async(self.function_call_requst)
-                future.add_done_callback(self.function_call_response_callback)
+                future = self.tool_call_client.call_async(self.tool_call_requst)
+                future.add_done_callback(lambda callback: self.function_call_response_callback(callback, function_name))
 
-    def function_call_response_callback(self, future):
+
+    def function_call_response_callback(self, future, function_name):
         """
         The function call response callback is called when the function call response is received.
         the function_call_response_callback will call the gpt service again
         to get the text response to user
         """
+        response_text = "null"
         try:
             response = future.result()
             self.get_logger().info(
                 f"Response from ChatGPT_function_call_service: {response}"
             )
+            response_text = response.output
 
         except Exception as e:
             self.get_logger().info(f"ChatGPT function call service failed {e}")
 
         self.add_message_to_history(
             role="function",
-            name=self.function_name,
-            content=self.function_call_requst.request_text,
+            name=function_name,
+            content=str(response_text),
         )
         # Generate chat completion
         # second_chatgpt_response = self.generate_chatgpt_response(config.chat_history)
