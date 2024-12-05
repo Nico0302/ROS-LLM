@@ -86,7 +86,7 @@ class ChatGPTNode(Node):
         self.tools = []
 
         self.get_tool_descriptions_client = self.create_client(
-            GetToolDescriptions, "/get_tool_descriptions_client"
+            GetToolDescriptions, "/get_tool_descriptions"
         )
         while not self.get_tool_descriptions_client.wait_for_service(timeout_sec=1.0):
             self.get_logger().info(
