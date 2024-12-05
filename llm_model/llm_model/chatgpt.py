@@ -146,7 +146,7 @@ class ChatGPTNode(Node):
     def get_tool_descriptions_callback(self, future):
         try:
             response = future.result()
-            self.tools = response.tools
+            self.tools = json.loads(response.tools)
         except Exception as e:
             self.get_logger().info(f"Get tool descriptions failed: {e}")
 
@@ -330,9 +330,10 @@ class ChatGPTNode(Node):
                 # Get function name
                 function_name = function.name
                 # Send function call request
+                self.tool_call_requst.tool.name = function_name
                 self.tool_call_requst.tool.arguments = function.arguments
                 self.get_logger().info(
-                    f"Request for ChatGPT_function_call_service: {self.tool_call_requst.tool.arguments}"
+                    f"Request for ChatGPT_function_call_service: /{function_name} {self.tool_call_requst.tool.arguments}"
                 )
                 future = self.tool_call_client.call_async(self.tool_call_requst)
                 future.add_done_callback(lambda callback: self.function_call_response_callback(callback, function_name))

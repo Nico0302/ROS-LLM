@@ -27,6 +27,7 @@ class Tools(Node):
         self.description_srv = self.create_service(GetToolDescriptions, 'get_tool_descriptions', self.get_tool_descriptions)
 
     def call_tool(self, request: CallTool.Request, response: CallTool.Response):
+        self.get_logger().info(f'Calling tool {request.tool.name} with arguments {request.tool.arguments}')
         response.output = json.dumps(self._call(request.tool.name, json.loads(request.tool.arguments)), indent=2)
         return response
 
