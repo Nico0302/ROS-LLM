@@ -16,6 +16,17 @@ def generate_launch_description():
             #     output="screen",
             # ),
             Node(
+                package="llm_tools",
+                executable="llm_tools",
+                name="llm_tools",
+                output="screen",
+                parameters=[{
+                    "include_services": [
+                        "/*"
+                    ]
+                }]
+            ),
+            Node(
                 package="llm_model",
                 executable="chatgpt",
                 name="chatgpt",

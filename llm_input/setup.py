@@ -22,6 +22,7 @@ setup(
         'console_scripts': [
             "llm_audio_input = llm_input.llm_audio_input:main",
             "llm_audio_input_local = llm_input.llm_audio_input_local:main",
+            "basic_chat_input = llm_input.basic_chat_input:main",
         ],
     },
 )
