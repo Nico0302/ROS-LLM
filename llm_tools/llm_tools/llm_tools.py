@@ -20,7 +20,7 @@ class Tools(Node):
 
         self.tools = {}
 
-        self.declare_parameter('include_services', [])
+        self.declare_parameter('include_services', ["/*"])
         self.declare_parameter('exclude_services', [])
 
         self.call_srv = self.create_service(CallTool, 'call_tool', self.call_tool)
@@ -97,4 +97,4 @@ def main(args=None):
     rclpy.shutdown()
 
 if __name__ == '__main__':
-    main()
+    run_get_tool_descriptions()
