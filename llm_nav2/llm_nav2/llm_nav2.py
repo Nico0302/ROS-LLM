@@ -9,10 +9,7 @@ class Nav2LLM(Node):
         super().__init__("llm_nav2")
         self.nav = BasicNavigator()
 
-
-
-    
-
+        
 
 
 def main():
