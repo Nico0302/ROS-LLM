@@ -27,7 +27,7 @@ def generate_launch_description():
                 output="screen",
                 parameters=[{
                     "passiv_topics": [
-                        "/cmd_vel",
+                        "/cmd_vel:geometry_msgs/Twist",
                     ]
                 }]
             ),
