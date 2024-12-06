@@ -57,7 +57,7 @@ class Topic:
     
     def get_value(self) -> str|None|dict:
         """
-        Returns the value of the topic.
+        Requests a new value from the topic.
         """
         if self.value is None:
             return None

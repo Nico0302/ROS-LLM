@@ -14,7 +14,8 @@ class TopicContext:
 
     def __init__(self, node: Node) -> None:
         self.node = node
-        self._setup_parameters()
+        self._setup_parameters(
+        )
 
     def _setup_parameters(self) -> None:
         self.node.declare_parameter('passiv_topics', ["/example_topic:string"], ParameterDescriptor(
