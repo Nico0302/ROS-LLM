@@ -43,7 +43,11 @@ def generate_launch_description():
                 parameters=[{
                     "include_services": [
                         "/*"
-                    ]
+                    ],
+                    "exclude_services": [
+                        "/get_tool_descriptions",
+                        "/call_tool",
+                    ],
                 }]
             )
         ]

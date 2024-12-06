@@ -25,6 +25,11 @@ def generate_launch_description():
                 executable="chatgpt",
                 name="chatgpt",
                 output="screen",
+                parameters=[{
+                    "passiv_topics": [
+                        "/cmd_vel",
+                    ]
+                }]
             ),
         ]
     )

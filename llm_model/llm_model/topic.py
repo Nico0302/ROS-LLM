@@ -1,6 +1,7 @@
 import importlib
 from rclpy.node import Node
 from rclpy.task import Future
+import json
 
 class Topic:
     """
@@ -9,15 +10,16 @@ class Topic:
 
     name: str
     type: str
-    sync: bool
+    active: bool
 
     value: str
     dirty: bool
 
-    def __init__(self, name: str, type: str, sync=False) -> None:
+    def __init__(self, name: str, type: str, active=False) -> None:
         self.name = name
         self.type = type
-        self.sync = sync
+        self.active = active
+        
 
     def subscribe(self, node: Node) -> None:
         """
@@ -31,18 +33,20 @@ class Topic:
             10
         )
 
-    def get_value_async(self) -> Future:
+    def request_value(self) -> None:
         """
-        Returns the value of the topic.
+        Requests a new value from the topic.
         """
-        future = Future()
-        if not self.sync:
-            future.set_result(self.value)
-            return future
-        
         self.dirty = False
-        return future
+    
+    def future_complete(self) -> bool:
+        """
+        Returns whether the future is complete.
+        """
+        return self.dirty or not self.active
 
+    def __str__(self) -> str:
+        return f"{self.name}:\n{json.dumps(self.value)}"
 
     def _listener_callback(self, msg) -> None:
         """
