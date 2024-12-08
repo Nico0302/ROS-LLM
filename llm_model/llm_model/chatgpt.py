@@ -63,6 +63,8 @@ class ChatGPTNode(Node):
 
         self.topic_context = TopicContext(self)
 
+        self.topic_context.subscribe_topics()
+
         # Initialization publisher
         self.initialization_publisher = self.create_publisher(
             String, "/llm_initialization_state", 0

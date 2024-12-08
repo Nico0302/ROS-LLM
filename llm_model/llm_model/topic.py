@@ -1,7 +1,9 @@
+from functools import reduce
 import importlib
 from rclpy.node import Node
 from rclpy.task import Future
-import json
+from rosidl_runtime_py import message_to_ordereddict
+import yaml
 
 class Topic:
     """
@@ -10,16 +12,24 @@ class Topic:
 
     name: str
     type: str
+    path: list[str]
     active: bool
 
-    value: str
+    value: str|None
     dirty: bool
 
-    def __init__(self, name: str, type: str, active=False) -> None:
+    def __init__(self, name: str, type: str, path: list[str] = [], active=False) -> None:
         self.name = name
         self.type = type
+        self.path = path
         self.active = active
-        
+        self.value = None
+    
+    @staticmethod
+    def from_string(value: str, **kwargs) -> "Topic":
+        [topic_name, topic_type] = value.split(':')
+        [topic_name, *path] = topic_name.split('.')
+        return Topic(topic_name, topic_type, path, **kwargs)
 
     def subscribe(self, node: Node) -> None:
         """
@@ -39,20 +49,31 @@ class Topic:
         """
         self.dirty = False
     
-    def future_complete(self) -> bool:
+    def is_future_complete(self) -> bool:
         """
         Returns whether the future is complete.
         """
         return self.dirty or not self.active
+    
+    def get_value(self) -> str|None|dict:
+        """
+        Returns the value of the topic.
+        """
+        if self.value is None:
+            return None
+        value = message_to_ordereddict(self.value)
+        if len(self.path) > 0:
+            value = reduce(lambda dct, key: dct[key], self.path, value) # type: ignore
+        return value
 
     def __str__(self) -> str:
-        return f"{self.name}:\n{json.dumps(self.value)}"
+        return f"{self.name}:\n{yaml.dump(self.get_value())}"
 
     def _listener_callback(self, msg) -> None:
         """
         Callback for the subscription.
         """
-        self.value = msg.data
+        self.value = msg
         self.dirty = True
 
     def _get_msg_module(self):

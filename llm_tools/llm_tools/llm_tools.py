@@ -21,7 +21,7 @@ class Tools(Node):
         self.tools = {}
 
         self.declare_parameter('include_services', ["/*"])
-        self.declare_parameter('exclude_services', [])
+        self.declare_parameter('exclude_services', ["*parameter*"])
 
         self.call_srv = self.create_service(CallTool, 'call_tool', self.call_tool)
         self.description_srv = self.create_service(GetToolDescriptions, 'get_tool_descriptions', self.get_tool_descriptions)

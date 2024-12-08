@@ -17,6 +17,9 @@ def generate_launch_description():
                 parameters=[{
                     "include_services": [
                         "/*"
+                    ],
+                    "exclude_services": [
+                        "*parameter*"
                     ]
                 }]
             ),
@@ -27,7 +30,7 @@ def generate_launch_description():
                 output="screen",
                 parameters=[{
                     "passiv_topics": [
-                        "/cmd_vel:geometry_msgs/Twist",
+                        "/amcl_pose.pose.pose.position:geometry_msgs/msg/PoseWithCovarianceStamped",
                     ]
                 }]
             ),
