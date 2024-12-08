@@ -16,11 +16,14 @@ def generate_launch_description():
                 output="screen",
                 parameters=[{
                     "include_services": [
-                        "/*"
+                        "/"
                     ],
                     "exclude_services": [
                         "*parameter*"
-                    ]
+                    ],
+                    "include_topics": [
+                        "/cmd_vel",
+                    ],
                 }]
             ),
             Node(

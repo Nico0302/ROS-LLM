@@ -1,3 +1,5 @@
+from typing import Sequence
+from llm_tools.topic import Topic
 from llm_tools.service import Service
 from llm_tools.filter import Filter, NameFilter
 from llm_tools.converters import Converter, OpenAIConverter
@@ -20,8 +22,10 @@ class Tools(Node):
 
         self.tools = {}
 
-        self.declare_parameter('include_services', ["/*"])
+        self.declare_parameter('include_services', ["/"])
         self.declare_parameter('exclude_services', ["*parameter*"])
+        self.declare_parameter('include_topics', ["/"])
+        self.declare_parameter('exclude_topics', ["*parameter*"])
 
         self.call_srv = self.create_service(CallTool, 'call_tool', self.call_tool)
         self.description_srv = self.create_service(GetToolDescriptions, 'get_tool_descriptions', self.get_tool_descriptions)
@@ -34,8 +38,10 @@ class Tools(Node):
     def get_tool_descriptions(self, request: GetToolDescriptions.Request, response: GetToolDescriptions.Response):
         include_services = self.get_parameter('include_services').get_parameter_value().string_array_value
         exclude_services = self.get_parameter('exclude_services').get_parameter_value().string_array_value
+        include_topics = self.get_parameter('include_topics').get_parameter_value().string_array_value
+        exclude_topics = self.get_parameter('exclude_topics').get_parameter_value().string_array_value
 
-        filter = NameFilter(include_services, exclude_services) # type: ignore
+        filter = NameFilter(include_services, exclude_services, include_topics, exclude_topics) # type: ignore
         converter = OpenAIConverter()
 
         response.tools = self._discover(
@@ -49,18 +55,26 @@ class Tools(Node):
             node_namespace = self.get_namespace()
         tools: list[llm_tools.tool.Tool] = []
         for node_name in self.get_node_names():
+            if node_name == self.get_name():
+                continue
             tools += Service.discover(self, node_name, node_namespace)
+            tools += Topic.discover(self, node_name, node_namespace)
 
         tools = filter.filter_tools(tools)
 
         for tool in tools:
+            tool.setup(self)
             for name in tool.get_names():
                 self.tools[name] = tool
 
         return converter.convert_tools(tools)
     
     def _call(self, name: str, parameters: dict):
-        return self._wait_for_response(self.tools[name].call(self, parameters))
+        result = self.tools[name].call(self, parameters)
+        if result is not None:
+            return self._wait_for_response(result)
+        else:
+            return None
     
     def _wait_for_response(self, future):
         rclpy.spin_until_future_complete(self, future)
@@ -79,13 +93,13 @@ def run_call_tool():
     tools.destroy_node()
     rclpy.shutdown()
 
-def run_get_tool_descriptions():
+def run_get_tool_descriptions(Args=None):
     rclpy.init()
     tools = Tools()
     # wait for node to initialize
     rclpy.spin_once(tools, timeout_sec=1)
     with open('tools.json', 'w') as f:
-        json.dump(json.loads(tools._discover(NameFilter(['/*'], []), OpenAIConverter())), f, indent=4)
+        json.dump(json.loads(tools._discover(NameFilter(['/'], [], ["/cmd_vel"], []), OpenAIConverter())), f, indent=4)
 
     tools.destroy_node()
     rclpy.shutdown()

@@ -21,6 +21,7 @@ setup(
     entry_points={
         'console_scripts': [
             'llm_tools = llm_tools.llm_tools:main',
+            'get_tool_descriptions = llm_tools.llm_tools:run_get_tool_descriptions',
         ],
     },
 )
