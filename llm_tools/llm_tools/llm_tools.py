@@ -32,7 +32,12 @@ class Tools(Node):
 
     def call_tool(self, request: CallTool.Request, response: CallTool.Response):
         self.get_logger().info(f'Calling tool {request.tool.name} with arguments {request.tool.arguments}')
-        response.output = json.dumps(self._call(request.tool.name, json.loads(request.tool.arguments)), indent=2)
+        call_result = None
+        try:
+            call_result = self._call(request.tool.name, json.loads(request.tool.arguments))
+        except Exception as e:
+            call_result = {"error": str(e)}
+        response.output = json.dumps(call_result, indent=2)
         return response
 
     def get_tool_descriptions(self, request: GetToolDescriptions.Request, response: GetToolDescriptions.Response):

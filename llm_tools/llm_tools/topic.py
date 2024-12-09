@@ -35,6 +35,8 @@ class Topic(Tool):
     def call(self, node, values):
         if self.publisher is None:
             raise RuntimeError('The publisher is not initialized')
+        if "values" not in values:
+            raise RuntimeError('The values key is missing')
         msg_module = self._get_msg_module()
         msg = msg_module()
         try:
