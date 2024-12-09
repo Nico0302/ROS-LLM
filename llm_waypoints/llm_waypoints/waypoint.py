@@ -8,7 +8,7 @@ class Waypoint:
         self.description = description
         self.location = location
 
-    def navigate_to_waypoint(self, position):
+    def navigate_to_waypoint(self):
         '''
         Call the nav2 command to navigate to self.location.
         '''
@@ -23,4 +23,7 @@ class Waypoint:
             'location': self.location,
             'distance': distance
         }
+    
+    def calc_distance(self, position):
+        return
     

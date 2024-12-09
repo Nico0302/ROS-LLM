@@ -42,6 +42,12 @@ def generate_launch_description():
                 executable="llm_waypoints",
                 name="llm_waypoints",
                 output="screen"
-            )
+            ),
+            Node(
+                package="turtlesim",
+                executable="turtlesim_node",
+                name="turtlesim_node",
+                output="screen",
+            ),
         ]
     )

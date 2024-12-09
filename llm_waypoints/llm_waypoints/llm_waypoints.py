@@ -1,9 +1,10 @@
 from llm_interfaces.srv import Nav2Waypoint
 from llm_interfaces.srv import GetWaypoints
 
+from turtlesim.msg import Pose
+
 import rclpy
 from rclpy.node import Node
-from tf2_ros import TransformListener, Buffer
 
 import json
 from llm_waypoints.waypoint import Waypoint
@@ -12,12 +13,20 @@ class Waypoints(Node):
 
     def __init__(self):
         super().__init__('llm_waypoints')
-        self.get_waypoints_srv = self.create_service(GetWaypoints, 'get_waypoints', self.get_waypoints)
-        self.navigate_to_waypoint_srv = self.create_service(Nav2Waypoint, 'navigate_to_waypoint', self.navigate_to_waypoint)
+        self.get_waypoints_srv = self.create_service(
+            GetWaypoints, 'get_waypoints', self.get_waypoints
+            )
+        self.navigate_to_waypoint_srv = self.create_service(
+            Nav2Waypoint, 'navigate_to_waypoint', self.navigate_to_waypoint
+            )
         
         # For grabbing positional information
-        self.tf_buffer = Buffer()
-        self.tf_listener = TransformListener(self.tf_buffer, self)
+        self.subscription = self.create_subscription(
+            Pose, 
+            '/turtle1/pose',
+            self.pose_callback,
+            10
+        )
 
         # Default Waypoints
         self.waypoint_list = [
@@ -40,26 +49,27 @@ class Waypoints(Node):
         # Call the nav2waypoint method in the waypoint
         waypoint.navigate_to_waypoint()
 
-    def get_waypoints(self):
+    def get_waypoints(self, request, response):
         '''
         Returns a JSON string of all the available waypoints
         '''
         self.position = self.get_position()
+        print(self.position)
 
         # Get the 
-        waypoint_dicts = [waypoint.to_dict() for waypoint in self.waypoint_list]
+        waypoint_dicts = [waypoint.to_dict(self.position) for waypoint in self.waypoint_list]
 
-        return json.dumps(waypoint_dicts, indent=4)
+        response.waypoint_options = json.dumps(waypoint_dicts, indent=4)
 
-    def get_position(self):
-        try:
-            trans = self.tf_buffer.lookup_transform('map', 'base_link', rclpy.time.Time())
-            self.get_logger().info(f"Robot position: {trans.transform.translation}, {trans.transform.rotation}")
-            return trans.transform
-        except Exception as e:
-            print(f"Could not get Transform")
-            self.get_logger().warn(f'Could not get transform: {str(e)}')
-            return None
+        return response
+
+    def pose_callback(self, msg):
+
+        x = msg.x
+        y = msg.y
+        theta = msg.theta
+
+        return x, y, theta
         
 def main():
     rclpy.init()

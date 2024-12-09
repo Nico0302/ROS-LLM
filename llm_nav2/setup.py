@@ -20,7 +20,7 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'Nav2LLM = llm_nav2.Nav2LLM:main'
+            'llm_nav2 = llm_nav2.llm_nav2:main'
         ],
     },
 )
