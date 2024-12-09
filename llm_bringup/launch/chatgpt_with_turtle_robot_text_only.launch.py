@@ -37,5 +37,11 @@ def generate_launch_description():
                     ]
                 }]
             ),
+            Node(
+                package="llm_waypoints",
+                executable="llm_waypoints",
+                name="llm_waypoints",
+                output="screen"
+            )
         ]
     )
