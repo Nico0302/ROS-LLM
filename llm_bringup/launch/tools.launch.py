@@ -42,8 +42,15 @@ def generate_launch_description():
                 output="screen",
                 parameters=[{
                     "include_services": [
-                        "/*"
-                    ]
+                        "none"
+                    ],
+                    "exclude_services": [
+                        "/get_tool_descriptions",
+                        "/call_tool",
+                    ],
+                    "include_topics": [
+                        "/cmd_vel",
+                    ],
                 }]
             )
         ]

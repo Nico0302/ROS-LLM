@@ -35,6 +35,7 @@
 # Author: Herman Ye @Auromix
 
 # ROS related
+from llm_model.topic_context import TopicContext
 import rclpy
 from rclpy.node import Node
 from llm_interfaces.srv import CallTool, GetToolDescriptions
@@ -55,8 +56,15 @@ from llm_config.user_config import UserConfig
 config = UserConfig()
 
 class ChatGPTNode(Node):
+    topic_context: TopicContext
+
     def __init__(self):
         super().__init__("ChatGPT_node")
+
+        self.topic_context = TopicContext(self)
+
+        self.topic_context.subscribe_topics()
+
         # Initialization publisher
         self.initialization_publisher = self.create_publisher(
             String, "/llm_initialization_state", 0
@@ -379,7 +387,9 @@ class ChatGPTNode(Node):
 
         self.get_logger().info(f"Input message received: {msg.data}")
         # Add user message to chat history
-        user_prompt = msg.data
+        topics = self.topic_context.get_subscribed_topics()
+        topic_values = "\n".join([str(topic) for topic in topics])
+        user_prompt = f"===BEGIN TOPICS===\n{topic_values}===END TOPICS===\n{msg.data}"
         self.add_message_to_history("user", user_prompt)
         # Generate chat completion
         chatgpt_response = self.generate_chatgpt_response(config.chat_history)

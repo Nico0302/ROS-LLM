@@ -6,5 +6,7 @@ class Filter(ToolVisitor):
         filtered_tools = []
         for tool in tools:
             if tool.accept(self):
-                filtered_tools.append(tool)
+                # append only if the tool is not already in the list
+                if not any(t == tool for t in filtered_tools):
+                    filtered_tools.append(tool)
         return filtered_tools

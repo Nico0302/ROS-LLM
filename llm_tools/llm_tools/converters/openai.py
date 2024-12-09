@@ -22,6 +22,28 @@ class OpenAIConverter(Converter):
         """
         return self.convert_service(service.type, service.get_names()[0])
     
+    def visit_topic(self, topic):
+        """
+        Accepts a topic and converts it into a openai message definition.
+        """
+        function = { 
+            "name": topic.get_names()[0],
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "values": self.convert_message(topic.type),
+                    "times": { "type": "integer", "minimum": 1, "description": "The number of times to publish the message." }
+                },
+                "required": ["values"]
+            },
+            "description": "Publishes a message to the topic " + topic.name
+        }
+    
+        return {
+            'type': 'function',
+            'function': function
+        }
+    
     def convert_type(self, type: parser.Type | parser.MessageSpecification):
         """
         Converts a ROS type into a openai type.

@@ -13,6 +13,10 @@ class Service(llm_tools.tool.Tool):
     - name: The name of the service
     - type: The interface type of the service
     """
+
+    name: str
+    type: str
+
     def __init__(self, name, type):
         self.name = name
         self.type = type
@@ -75,3 +79,8 @@ class Service(llm_tools.tool.Tool):
         except AttributeError:
             raise RuntimeError('The passed type is not a service')
         return srv_module
+    
+    def __eq__(self, value: object) -> bool:
+        if not isinstance(value, Service):
+            return False
+        return self.name == value.name and self.type == value.type
