@@ -16,7 +16,7 @@ setup(
     maintainer='robot2',
     maintainer_email='08lbutler31@gmail.com',
     description='TODO: Package description',
-    license='TODO: License declaration',
+    license='Apache-2.0',
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
