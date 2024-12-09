@@ -6,7 +6,7 @@ from rclpy.node import Node
 from tf2_ros import TransformListener, Buffer
 
 import json
-from waypoint import Waypoint
+from llm_waypoints.waypoint import Waypoint
 
 class Waypoints(Node):
 
