@@ -23,7 +23,7 @@ class Waypoints(Node):
             PoseWithCovarianceStamped,
             "/amcl_pose",
             self.pose_listener_callback,
-            1
+            10
         )
 
         # For navigating to the waypoint
@@ -54,7 +54,7 @@ class Waypoints(Node):
         # Call the nav2waypoint method in the waypoint
         self.get_logger().info("Calling navigation client...")
 
-        request = GoToPose.Request()
+        request = GoToWaypoint.Request()
         request.pose = waypoint.location
         future = self.navigation_client.call_async(request)
         rclpy.spin_until_future_complete(self, future)
@@ -63,22 +63,23 @@ class Waypoints(Node):
             self.get_logger().info(f"Result: {future.result().sum}")
         else:
             self.get_logger().error('Service call failed')
-        
-
+            
     def get_waypoints(self, request, response):
         '''
         Returns a JSON string of all the available waypoints
         '''
-        
-        if self.postion is not None:
+        if self.position is not None:
             waypoint_dicts = [waypoint.to_dict(self.position) for waypoint in self.waypoint_list]
             response.waypoint_options = json.dumps(waypoint_dicts)
+            return response
+        else:
+            self.get_logger().info("Position has not be published by amcl_pose. Set starting position in Nav2.")
+            response.waypoint_options = ''
             return response
             
     def pose_listener_callback(self, msg):
         self.get_logger().info(f"Received pose: {msg.pose.pose}")
-        assert isinstance(msg, PoseWithCovarianceStamped)
-        self.position = msg
+        self.position = msg.pose.pose
         
 def main():
     rclpy.init()

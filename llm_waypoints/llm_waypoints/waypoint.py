@@ -24,9 +24,12 @@ class Waypoint:
         '''
         Calculates the euclideans distance from the waypoint to the current location of the robot.
         '''
-        x = abs(position.pose.pose.position.x - self.location.pose.pose.position.x)
-        y = abs(position.pose.pose.position.y - self.location.pose.pose.position.y)
-        z = abs(position.pose.pose.position.z -  self.location.pose.pose.position.z)
+
+        x = position.position.x 
+        y = self.location.pose.pose.position.x
+        x = abs(position.position.x - self.location.pose.pose.position.x)
+        y = abs(position.position.y - self.location.pose.pose.position.y)
+        z = abs(position.position.z - self.location.pose.pose.position.z)
 
         return round(math.sqrt(x*x + y*y + z*z), 2)
     
