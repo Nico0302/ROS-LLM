@@ -27,9 +27,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "srv/ChatGPT.srv"
   "srv/CallTool.srv"
   "srv/GetToolDescriptions.srv"
-  "srv/Nav2Waypoint.srv"
-  "srv/GetWaypoints.srv"
-  "srv/GoToWaypoint.srv"
+  "srv/Nav2Waypoint.srv" 
   DEPENDENCIES
   geometry_msgs
  )

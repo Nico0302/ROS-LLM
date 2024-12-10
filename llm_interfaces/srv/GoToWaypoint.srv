@@ -1,5 +1,0 @@
-# GoToWaypoint.srv
-geometry_msgs/PoseWithCovarianceStamped pose
----
-bool success
-string message

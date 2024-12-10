@@ -43,11 +43,5 @@ def generate_launch_description():
                 name="llm_waypoints",
                 output="screen"
             ),
-            Node(
-                package="llm_nav2",
-                executable="llm_nav2",
-                name="llm_nav2",
-                output="screen"
-            )
         ]
     )

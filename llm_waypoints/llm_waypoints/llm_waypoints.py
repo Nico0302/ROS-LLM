@@ -1,22 +1,31 @@
 from llm_interfaces.srv import Nav2Waypoint
-from llm_interfaces.srv import GetWaypoints
 
 import rclpy
 from rclpy.node import Node
 from tf2_ros import TransformListener, Buffer
 
 import json
-from llm_waypoints.waypoint import Waypoint
+from std_msgs.msg import String
 from llm_waypoints.default_waypoints import *
 
 from geometry_msgs.msg import PoseWithCovarianceStamped
-from llm_interfaces.srv import GoToWaypoint
+from nav2_simple_commander.robot_navigator import BasicNavigator
 
 class Waypoints(Node):
     def __init__(self):
         super().__init__('llm_waypoints')
-        self.get_waypoints_srv = self.create_service(GetWaypoints, 'get_waypoints', self.get_waypoints)
-        self.navigate_to_waypoint_srv = self.create_service(Nav2Waypoint, 'navigate_to_waypoint', self.navigate_to_waypoint)
+
+        self.nav = BasicNavigator()
+
+        self.waypoints_publisher_ = self.create_publisher(
+            String, 
+            'waypoints', 
+            10)
+
+        self.navigate_to_waypoint_srv = self.create_service(
+            Nav2Waypoint, 
+            'navigate_to_waypoint', 
+            self.navigate_to_waypoint)
         
         # For grabbing positional information
         self.pose_subscription = self.create_subscription(
@@ -24,12 +33,6 @@ class Waypoints(Node):
             "/amcl_pose",
             self.pose_listener_callback,
             10
-        )
-
-        # For navigating to the waypoint
-        self.navigation_client = self.create_client(
-            GoToWaypoint,
-            "/go_to_waypoint"
         )
         
         # Default Waypoints
@@ -54,32 +57,30 @@ class Waypoints(Node):
         # Call the nav2waypoint method in the waypoint
         self.get_logger().info("Calling navigation client...")
 
-        request = GoToWaypoint.Request()
-        request.pose = waypoint.location
-        future = self.navigation_client.call_async(request)
-        rclpy.spin_until_future_complete(self, future)
+        self.nav.goToPose(waypoint.location)
+        while not self.nav.isTaskComplete():
+            feedback = self.nav.getFeedback()
+            self.get_logger().info("Navigation to waypoint...")
+            if feedback.navigation_duration > 600:
+                self.nav.cancelTask()
 
-        if future.result() is not None:
-            self.get_logger().info(f"Result: {future.result().sum}")
-        else:
-            self.get_logger().error('Service call failed')
-            
-    def get_waypoints(self, request, response):
+    def publish_waypoints(self):
         '''
         Returns a JSON string of all the available waypoints
         '''
+        msg = String()
         if self.position is not None:
             waypoint_dicts = [waypoint.to_dict(self.position) for waypoint in self.waypoint_list]
-            response.waypoint_options = json.dumps(waypoint_dicts)
-            return response
+            msg.data = json.dumps(waypoint_dicts)
+            self.waypoints_publisher_.publish(msg)
+            self.get_logger().info('Publishing: "%s"' % msg.data)
         else:
             self.get_logger().info("Position has not be published by amcl_pose. Set starting position in Nav2.")
-            response.waypoint_options = ''
-            return response
-            
+ 
     def pose_listener_callback(self, msg):
         self.get_logger().info(f"Received pose: {msg.pose.pose}")
         self.position = msg.pose.pose
+        self.publish_waypoints()
         
 def main():
     rclpy.init()
