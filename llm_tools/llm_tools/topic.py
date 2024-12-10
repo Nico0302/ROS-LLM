@@ -69,9 +69,12 @@ class Topic(Tool):
         tools = []
         topics = []
         try:
-            topics = node.get_publisher_names_and_types_by_node(node_name, node_namespace)
-        except:
-            pass
+            topics = node.get_topic_names_and_types()
+        except Exception as e:
+            print('Failed to get publisher names and types by node: {0}'.format(e))
+            return []
+        print('Topics: {0}'.format(topics))
+
         for [topic_name, types] in topics:
             if not isinstance(types, list):
                 types = [types]

@@ -22,7 +22,7 @@ def generate_launch_description():
                         "*parameter*"
                     ],
                     "include_topics": [
-                        "/cmd_vel",
+                        "/cmd_vel"
                     ],
                 }]
             ),
@@ -33,7 +33,7 @@ def generate_launch_description():
                 output="screen",
                 parameters=[{
                     "passiv_topics": [
-                        "/amcl_pose.pose.pose.position:geometry_msgs/msg/PoseWithCovarianceStamped",
+                        "/imu.pose.pose.position:geometry_msgs/msg/PoseWithCovarianceStamped",
                     ]
                 }]
             ),
