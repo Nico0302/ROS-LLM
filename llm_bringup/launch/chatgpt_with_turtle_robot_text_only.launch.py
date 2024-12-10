@@ -44,10 +44,10 @@ def generate_launch_description():
                 output="screen"
             ),
             Node(
-                package="turtlesim",
-                executable="turtlesim_node",
-                name="turtlesim_node",
-                output="screen",
-            ),
+                package="llm_nav2",
+                executable="llm_nav2",
+                name="llm_nav2",
+                output="screen"
+            )
         ]
     )

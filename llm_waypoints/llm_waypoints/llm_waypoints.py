@@ -1,30 +1,27 @@
 from llm_interfaces.srv import Nav2Waypoint
 from llm_interfaces.srv import GetWaypoints
 
-from turtlesim.msg import Pose
-
 import rclpy
 from rclpy.node import Node
+from tf2_ros import TransformListener, Buffer
 
 import json
 from llm_waypoints.waypoint import Waypoint
+
+from geometry_msgs.msg import PoseWithCovarianceStamped
 
 class Waypoints(Node):
 
     def __init__(self):
         super().__init__('llm_waypoints')
-        self.get_waypoints_srv = self.create_service(
-            GetWaypoints, 'get_waypoints', self.get_waypoints
-            )
-        self.navigate_to_waypoint_srv = self.create_service(
-            Nav2Waypoint, 'navigate_to_waypoint', self.navigate_to_waypoint
-            )
+        self.get_waypoints_srv = self.create_service(GetWaypoints, 'get_waypoints', self.get_waypoints)
+        self.navigate_to_waypoint_srv = self.create_service(Nav2Waypoint, 'navigate_to_waypoint', self.navigate_to_waypoint)
         
         # For grabbing positional information
-        self.subscription = self.create_subscription(
-            Pose, 
-            '/turtle1/pose',
-            self.pose_callback,
+        self.pose_subscription = self.create_subscription(
+            PoseWithCovarianceStamped,
+            f"amcl_pose",
+            self.pose_listener_callback,
             10
         )
 
@@ -53,23 +50,18 @@ class Waypoints(Node):
         '''
         Returns a JSON string of all the available waypoints
         '''
-        self.position = self.get_position()
-        print(self.position)
 
         # Get the 
         waypoint_dicts = [waypoint.to_dict(self.position) for waypoint in self.waypoint_list]
 
-        response.waypoint_options = json.dumps(waypoint_dicts, indent=4)
+        response.waypoint_options = json.dumps(waypoint_dicts)
 
         return response
 
-    def pose_callback(self, msg):
+    def pose_listener_callback(self, msg):
+        self.get_logger().info(f"Received pose: {msg.pose.pose}")
 
-        x = msg.x
-        y = msg.y
-        theta = msg.theta
-
-        return x, y, theta
+        self.position = msg.pose.pose
         
 def main():
     rclpy.init()
