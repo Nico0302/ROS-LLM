@@ -51,7 +51,6 @@ from openai import OpenAI
 import openai
 from llm_config.user_config import UserConfig
 
-
 # Global Initialization
 config = UserConfig()
 
@@ -106,8 +105,6 @@ class ChatGPTNode(Node):
             self.get_tool_descriptions_request
         )
         self.get_tool_descriptions_future.add_done_callback(self.get_tool_descriptions_callback)
-
-
 
         # ChatGPT function call client
         # When function call is detected

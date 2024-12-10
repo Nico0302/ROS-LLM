@@ -7,11 +7,11 @@ from tf2_ros import TransformListener, Buffer
 
 import json
 from llm_waypoints.waypoint import Waypoint
+from llm_waypoints.default_waypoints import *
 
 from geometry_msgs.msg import PoseWithCovarianceStamped
 
 class Waypoints(Node):
-
     def __init__(self):
         super().__init__('llm_waypoints')
         self.get_waypoints_srv = self.create_service(GetWaypoints, 'get_waypoints', self.get_waypoints)
@@ -20,15 +20,21 @@ class Waypoints(Node):
         # For grabbing positional information
         self.pose_subscription = self.create_subscription(
             PoseWithCovarianceStamped,
-            f"amcl_pose",
-            self.pose_listener_callback,
-            10
+            "/amcl_pose",
+            self.pose_listener_callback
         )
 
+        # For navigating to the waypoint
+        self.navigation_client = self.create_client(
+            PoseWithCovarianceStamped,
+            "/go_to_waypoint"
+        )
+        
         # Default Waypoints
-        self.waypoint_list = [
-            Waypoint(short_name='garbage can', description='A garbage can in the hallway', location=(20, 20))
-        ]
+        self.waypoint_list = default_waypoints
+
+        # Stores current position of the robot
+        self.position = None
 
     def navigate_to_waypoint(self, request, response):
         '''
@@ -44,24 +50,31 @@ class Waypoints(Node):
                 break
 
         # Call the nav2waypoint method in the waypoint
-        waypoint.navigate_to_waypoint()
+        self.get_logger().info("Calling navigation client...")
+        future = self.navigation_client.call_async(waypoint.location)
+
+        rclpy.spin_until_future_complete(self, future)
+
+        if future.result() is not None:
+            self.get_logger().info(f"Result: {future.result().sum}")
+        else:
+            self.get_logger().error('Service call failed')
+        
 
     def get_waypoints(self, request, response):
         '''
         Returns a JSON string of all the available waypoints
         '''
-
-        # Get the 
-        waypoint_dicts = [waypoint.to_dict(self.position) for waypoint in self.waypoint_list]
-
-        response.waypoint_options = json.dumps(waypoint_dicts)
-
-        return response
-
+        
+        if self.postion is not None:
+            waypoint_dicts = [waypoint.to_dict(self.position) for waypoint in self.waypoint_list]
+            response.waypoint_options = json.dumps(waypoint_dicts)
+            return response
+            
     def pose_listener_callback(self, msg):
         self.get_logger().info(f"Received pose: {msg.pose.pose}")
-
-        self.position = msg.pose.pose
+        assert isinstance(msg, PoseWithCovarianceStamped)
+        self.position = msg
         
 def main():
     rclpy.init()
