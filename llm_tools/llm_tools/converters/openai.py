@@ -32,7 +32,7 @@ class OpenAIConverter(Converter):
                 "type": "object",
                 "properties": {
                     "values": self.convert_message(topic.type),
-                    "times": { "type": "integer", "minimum": 1, "description": "The number of times to publish the message." }
+                    "times": { "type": "integer", "minimum": 1, "default": 1, "description": "The number of times to publish the message with 1 Hz (number of steps)." }
                 },
                 "required": ["values"]
             },
@@ -110,10 +110,15 @@ class OpenAIConverter(Converter):
         if isinstance(spec, str):
             spec = parser.parse_message_file(*self._get_interface_path(spec))
         properties = {}
+        required = []
         for field in spec.fields:
             [name, definiton] = self.convert_field(field)
             properties[name] = definiton
-        return { "type": "object", "properties": properties } | (self._get_description(spec) if parseDescription else {})
+            if definiton.get("default") is None and "optional" not in definiton.get("description", ""):
+                required.append(name)
+        return { "type": "object", "properties": properties } | \
+            (self._get_description(spec) if parseDescription else {}) | \
+            ({ "required": required } if len(required) > 0 else {})
     
     def convert_service(self, spec: parser.ServiceSpecification | str, name: Optional[str] = None):
         """

@@ -104,7 +104,7 @@ def run_get_tool_descriptions(Args=None):
     # wait for node to initialize
     rclpy.spin_once(tools, timeout_sec=1)
     with open('tools.json', 'w') as f:
-        json.dump(json.loads(tools._discover(NameFilter(['/'], [], ["/cmd_vel"], []), OpenAIConverter())), f, indent=4)
+        json.dump(json.loads(tools._discover(NameFilter(['/'], [], ["/cmd_vel"], []), OpenAIConverter(), node_namespace="/")), f, indent=4)
 
     tools.destroy_node()
     rclpy.shutdown()
