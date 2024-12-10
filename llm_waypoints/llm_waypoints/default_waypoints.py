@@ -1,5 +1,5 @@
 from geometry_msgs.msg import PoseWithCovarianceStamped, Point, Quaternion
-from waypoint import Waypoint
+from llm_waypoints.waypoint import Waypoint
 
 def create_pose(x, y, z):
     pose = PoseWithCovarianceStamped()

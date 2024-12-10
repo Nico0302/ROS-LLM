@@ -14,7 +14,12 @@ find_package(ament_cmake REQUIRED)
 # To convert the interfaces you defined into language-specific code
 # (like C++ and Python) so that they can be used in those languages
 # ROS Interfaces Settings:https://docs.ros.org/en/crystal/Tutorials/Custom-ROS2-Interfaces.html
+
+find_package(ament_cmake REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(std_msgs REQUIRED)
+
 
 rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/ChatGPT.msg"
@@ -24,6 +29,9 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "srv/GetToolDescriptions.srv"
   "srv/Nav2Waypoint.srv"
   "srv/GetWaypoints.srv"
+  "srv/GoToWaypoint.srv"
+  DEPENDENCIES
+  geometry_msgs
  )
 
 if(BUILD_TESTING)

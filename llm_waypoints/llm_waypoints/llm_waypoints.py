@@ -10,6 +10,7 @@ from llm_waypoints.waypoint import Waypoint
 from llm_waypoints.default_waypoints import *
 
 from geometry_msgs.msg import PoseWithCovarianceStamped
+from llm_interfaces.srv import GoToWaypoint
 
 class Waypoints(Node):
     def __init__(self):
@@ -21,12 +22,13 @@ class Waypoints(Node):
         self.pose_subscription = self.create_subscription(
             PoseWithCovarianceStamped,
             "/amcl_pose",
-            self.pose_listener_callback
+            self.pose_listener_callback,
+            1
         )
 
         # For navigating to the waypoint
         self.navigation_client = self.create_client(
-            PoseWithCovarianceStamped,
+            GoToWaypoint,
             "/go_to_waypoint"
         )
         
@@ -51,8 +53,10 @@ class Waypoints(Node):
 
         # Call the nav2waypoint method in the waypoint
         self.get_logger().info("Calling navigation client...")
-        future = self.navigation_client.call_async(waypoint.location)
 
+        request = GoToPose.Request()
+        request.pose = waypoint.location
+        future = self.navigation_client.call_async(request)
         rclpy.spin_until_future_complete(self, future)
 
         if future.result() is not None:

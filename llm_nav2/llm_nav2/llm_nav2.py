@@ -3,6 +3,7 @@ from rclpy.node import Node
 from nav2_simple_commander.robot_navigator import BasicNavigator
 
 from geometry_msgs.msg import PoseWithCovarianceStamped
+from llm_interfaces.srv import GoToWaypoint
 
 class Nav2LLM(Node):
     def __init__(self):
@@ -10,16 +11,20 @@ class Nav2LLM(Node):
         self.nav = BasicNavigator()
         
         self.nav_service = self.create_service(
-            PoseWithCovarianceStamped,
+            GoToWaypoint,
             "go_to_waypoint",
             self.go_to_waypoint,
         )
 
-    def go_to_waypoint(self, msg):
+    def go_to_waypoint(self, request, response):
+        '''
+        Calls nav2 to on the pose.
+        '''
 
-        assert isinstance(msg, PoseWithCovarianceStamped)
+        pose = request.pose
+        assert isinstance(request.pose, PoseWithCovarianceStamped)
 
-        self.nav.goToPose(msg)
+        self.nav.goToPose(pose)
         while not self.nav.isTaskComplete():
             feedback = self.nav.getFeedback()
             self.get_logger().info("Navigation to waypoint...")
