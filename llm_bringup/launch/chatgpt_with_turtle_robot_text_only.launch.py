@@ -10,13 +10,20 @@ def generate_launch_description():
     return LaunchDescription(
         [
             Node(
+                package="llm_waypoints",
+                executable="llm_waypoints",
+                name="llm_waypoints",
+                output="screen"
+            ),
+            Node(
                 package="llm_tools",
                 executable="llm_tools",
                 name="llm_tools",
                 output="screen",
                 parameters=[{
                     "include_services": [
-                        "/"
+                        "/create_waypoint",
+                        "/navigate_to_waypoint"
                     ],
                     "exclude_services": [
                         "*parameter*"
@@ -34,14 +41,9 @@ def generate_launch_description():
                 parameters=[{
                     "passiv_topics": [
                         "/imu.pose.pose.position:geometry_msgs/msg/PoseWithCovarianceStamped",
+                        "/waypoint:std_msgs/msg/String"
                     ]
                 }]
-            ),
-            Node(
-                package="llm_waypoints",
-                executable="llm_waypoints",
-                name="llm_waypoints",
-                output="screen"
             ),
         ]
     )
