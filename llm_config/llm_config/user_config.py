@@ -105,13 +105,13 @@ class UserConfig:
         # [required]: AWS IAM secret access key
         self.aws_secret_access_key = os.getenv("AWS_SECRET_ACCESS_KEY")
         # [required]: AWS IAM region name
-        self.aws_region_name = 'ap-southeast-1'
+        self.aws_region_name = 'us-west-1'
         # [required]: AWS S3 bucket name
-        self.bucket_name = 'auromixbucket'
+        self.bucket_name = 'ros-llm'
         # [optional]: AWS transcription language, change this to 'zh-CN' for Chinese
         self.aws_transcription_language = "en-US"
         # [optional]: AWS polly voice id, change this to 'Zhiyu' for Chinese
-        self.aws_voice_id = "Ivy"
+        self.aws_voice_id = "Joey"
 
         # OpenAI Whisper Model size related
         # [optional]: OpenAI Whisper Model size: tiny base small medium large

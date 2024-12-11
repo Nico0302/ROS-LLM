@@ -22,7 +22,8 @@ sudo apt-get install libcanberra-gtk-module libcanberra-gtk3-module -y
 
 # Install AWS boto3
 pip install boto3
-pip install numpy
+pip install --force-reinstall numpy==1.24.0
+pip install -U openai-whisper
 pip install sounddevice
 pip install pydub
 pip install scipy
@@ -33,7 +34,7 @@ sudo apt install ffmpeg -y
 sudo apt install libportaudio2 -y
 sudo apt install alsa-utils -y
 sudo apt install mpv -y
-pip install numpy sounddevice cffi soundfile
+pip install sounddevice cffi soundfile
 
 # Check again
 sudo apt update

@@ -38,32 +38,50 @@ def generate_launch_description():
             Node(
                 package="llm_input",
                 executable="llm_audio_input",
-                name="llm_audio_input",
+                name="llm_audio_input_local",
                 output="screen",
+            ),
+            Node(
+                package="llm_waypoints",
+                executable="llm_waypoints",
+                name="llm_waypoints",
+                output="screen"
+            ),
+            Node(
+                package="llm_tools",
+                executable="llm_tools",
+                name="llm_tools",
+                output="screen",
+                parameters=[{
+                    "include_services": [
+                        "/create_waypoint",
+                        "/navigate_to_waypoint"
+                    ],
+                    "exclude_services": [
+                        "*parameter*"
+                    ],
+                    "include_topics": [
+                        "/cmd_vel"
+                    ],
+                }]
             ),
             Node(
                 package="llm_model",
                 executable="chatgpt",
                 name="chatgpt",
                 output="screen",
+                parameters=[{
+                    "passiv_topics": [
+                        "/imu.pose.pose.position:geometry_msgs/msg/PoseWithCovarianceStamped",
+                        "/waypoints:std_msgs/msg/String"
+                    ]
+                }]
             ),
             Node(
                 package="llm_output",
                 executable="llm_audio_output",
                 name="llm_audio_output",
                 output="screen",
-            ),
-            Node(
-                package="llm_robot",
-                executable="turtle_robot",
-                name="turtle_robot",
-                output="screen",
-            ),
-            Node(
-                package="turtlesim",
-                executable="turtlesim_node",
-                name="turtlesim_node",
-                output="screen",
-            ),
+            )
         ]
     )

@@ -57,12 +57,6 @@ def generate_launch_description():
                 executable="llm_audio_output",
                 name="llm_audio_output",
                 output="screen",
-            ),
-            Node(
-                package="llm_robot",
-                executable="multi_robot",
-                name="multi_robot",
-                output="screen",
-            ),
+            )
         ]
     )
