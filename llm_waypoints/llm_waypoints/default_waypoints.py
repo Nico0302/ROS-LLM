@@ -1,20 +1,20 @@
-from geometry_msgs.msg import PoseWithCovarianceStamped, Point, Quaternion
+from geometry_msgs.msg import Pose, Point, Quaternion
 from llm_waypoints.waypoint import Waypoint
 
 def create_pose(x, y, z):
-    pose = PoseWithCovarianceStamped()
+    pose = Pose()
     point = Point()
     point.x = float(x)
     point.y = float(y)
     point.z = float(z)
-    pose.pose.pose.position = point
+    pose.position = point
 
     return pose
 
 
 default_waypoints = [
     Waypoint(
-        short_name='garbage can', 
+        short_name='garbage_can', 
         description='A garbage can in the hallway', 
         location=create_pose(3, 0, 4)
     ),

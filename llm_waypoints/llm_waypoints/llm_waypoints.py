@@ -6,9 +6,9 @@ from tf2_ros import TransformListener, Buffer
 
 import json
 from std_msgs.msg import String
+from geometry_msgs.msg import PoseWithCovarianceStamped, PoseStamped, Pose
+from llm_interfaces.srv import CreateWaypoint
 from llm_waypoints.default_waypoints import *
-
-from geometry_msgs.msg import PoseWithCovarianceStamped
 from nav2_simple_commander.robot_navigator import BasicNavigator
 
 class Waypoints(Node):
@@ -27,6 +27,12 @@ class Waypoints(Node):
             'navigate_to_waypoint', 
             self.navigate_to_waypoint)
         
+        self.create_waypoint_srv = self.create_service(
+            CreateWaypoint,
+            'create_waypoint',
+            self.create_waypoint
+        )
+        
         # For grabbing positional information
         self.pose_subscription = self.create_subscription(
             PoseWithCovarianceStamped,
@@ -41,28 +47,36 @@ class Waypoints(Node):
         # Stores current position of the robot
         self.position = None
 
+    def _find_waypoint(self, waypoint_shortname):
+
+        for point in self.waypoint_list:
+            if point.short_name == waypoint_shortname:
+                return point
+            
+        return None
+
     def navigate_to_waypoint(self, request, response):
         '''
         Searches the waypoint list for the short name, if found, navigates to that position.
         '''
-        destination = request.waypoint_shortname
         
         # Find the waypoint by shortname
-        waypoint = None
-        for point in self.waypoint_list:
-            if point.short_name == destination:
-                waypoint = point
-                break
+        waypoint = self._find_waypoint(request.waypoint_shortname)
 
-        # Call the nav2waypoint method in the waypoint
+        if not waypoint:
+            self.get_logger().info("No waypoint found")
+            return response
+
         self.get_logger().info("Calling navigation client...")
 
-        self.nav.goToPose(waypoint.location)
-        while not self.nav.isTaskComplete():
-            feedback = self.nav.getFeedback()
-            self.get_logger().info("Navigation to waypoint...")
-            if feedback.navigation_duration > 600:
-                self.nav.cancelTask()
+        # Create the target pose and send it to nav2
+        pose_stamped = PoseStamped()
+        pose_stamped.pose = waypoint.location
+        pose_stamped.header.stamp = self.get_clock().now().to_msg()
+        pose_stamped.header.frame_id = 'map'    # Fixed global point, not changing
+        self.nav.goToPose(pose_stamped)
+
+        return response
 
     def publish_waypoints(self):
         '''
@@ -78,15 +92,36 @@ class Waypoints(Node):
             self.get_logger().info("Position has not be published by amcl_pose. Set starting position in Nav2.")
  
     def pose_listener_callback(self, msg):
+        '''
+        Recieves the position of the robot from nav2
+        '''
         self.get_logger().info(f"Received pose: {msg.pose.pose}")
-        self.position = msg.pose.pose
+        self.position = msg.pose.pose   # Traverse PoseWithCovarienceStamped -> PoseWithCovariance -> Pose
+        assert isinstance(self.position, Pose)
         self.publish_waypoints()
+
+    def create_waypoint(self, request, response):
+        '''
+        Creates a new waypoint.
+        '''
+        if self.position is not None:
+            self.get_logger().info(f"Creating new waypoint: {request.waypoint_shortname} {self.position}")
+            pose = self.position   # type Pose
+            new_waypoint = Waypoint(
+                request.waypoint_shortname,
+                request.description,
+                pose
+            )
+            self.waypoint_list.append(new_waypoint)
+            return response
+        else:
+            self.get_logger().info(f"Cannot generate new waypoint: {request.waypoint_shortname}")
+            return response
         
 def main():
     rclpy.init()
     node = Waypoints()
     rclpy.spin(node)
-    print(node.get_waypoints())
 
 
     rclpy.shutdown()

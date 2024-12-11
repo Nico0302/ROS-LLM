@@ -1,0 +1,4 @@
+# Create a new waypoint
+string waypoint_shortname
+string description
+---
