@@ -381,19 +381,22 @@ class ChatGPTNode(Node):
         """
         # Log the llm_callback
         self.get_logger().info("STATE: model_processing")
-
         self.get_logger().info(f"Input message received: {msg.data}")
+
         # Add user message to chat history
         topics = self.topic_context.get_subscribed_topics()
         topic_values = "\n".join([str(topic) for topic in topics])
         user_prompt = f"===BEGIN TOPICS===\n{topic_values}===END TOPICS===\n{msg.data}"
         self.add_message_to_history("user", user_prompt)
+
         # Generate chat completion
         chatgpt_response = self.generate_chatgpt_response(config.chat_history)
+
         # Get response information
         message, text, tool_call, function_flag = self.get_response_information(
             chatgpt_response
         )
+
         # Append response to chat history
         if function_flag:
             for tool in tool_call:
@@ -404,6 +407,7 @@ class ChatGPTNode(Node):
             self.add_message_to_history(
                 role="assistant", content=text
             )
+            
         # Write chat history to JSON
         self.write_chat_history_to_json()
 
