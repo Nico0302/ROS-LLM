@@ -1,13 +1,11 @@
+# lucas butler
 from llm_interfaces.srv import Nav2Waypoint
-
-import rclpy
-from rclpy.node import Node
-from tf2_ros import TransformListener, Buffer
-
-import json
-from std_msgs.msg import String
 from geometry_msgs.msg import PoseWithCovarianceStamped, PoseStamped, Pose
 from llm_interfaces.srv import CreateWaypoint
+import rclpy
+from rclpy.node import Node
+import json
+from std_msgs.msg import String
 from llm_waypoints.default_waypoints import *
 from nav2_simple_commander.robot_navigator import BasicNavigator
 
@@ -17,16 +15,19 @@ class Waypoints(Node):
 
         self.nav = BasicNavigator()
 
+        # Shows available waypoints
         self.waypoints_publisher_ = self.create_publisher(
             String, 
             'waypoints', 
             10)
 
+        # Navigate to a waypoint
         self.navigate_to_waypoint_srv = self.create_service(
             Nav2Waypoint, 
             'navigate_to_waypoint', 
             self.navigate_to_waypoint)
         
+        # Create a new waypoint
         self.create_waypoint_srv = self.create_service(
             CreateWaypoint,
             'create_waypoint',
@@ -55,9 +56,9 @@ class Waypoints(Node):
             
         return None
 
-    def navigate_to_waypoint(self, request, response):
+    def navigate_to_waypoint(self, request: Nav2Waypoint.Request, response: Nav2Waypoint.Response):
         '''
-        Searches the waypoint list for the short name, if found, navigates to that position.
+        Searches the waypoint list for the short_name, if found, navigates to that position.
         '''
         
         # Find the waypoint by shortname
@@ -80,27 +81,29 @@ class Waypoints(Node):
 
     def publish_waypoints(self):
         '''
-        Returns a JSON string of all the available waypoints
+        Publishes the string of available waypoints and their distances relative to the robot
+            to the /waypoints topic.
         '''
         msg = String()
+
         if self.position is not None:
             waypoint_dicts = [waypoint.to_dict(self.position) for waypoint in self.waypoint_list]
             msg.data = json.dumps(waypoint_dicts)
             self.waypoints_publisher_.publish(msg)
             self.get_logger().info('Publishing: "%s"' % msg.data)
         else:
-            self.get_logger().info("Position has not be published by amcl_pose. Set starting position in Nav2.")
+            self.get_logger().info("Position has not be published by amcl_pose. Set starting pose in Nav2.")
  
-    def pose_listener_callback(self, msg):
+    def pose_listener_callback(self, msg: PoseWithCovarianceStamped):
         '''
         Recieves the position of the robot from nav2
         '''
         self.get_logger().info(f"Received pose: {msg.pose.pose}")
         self.position = msg.pose.pose   # Traverse PoseWithCovarienceStamped -> PoseWithCovariance -> Pose
         assert isinstance(self.position, Pose)
-        self.publish_waypoints()
+        self.publish_waypoints()        # Update /waypoints after a new position is posted
 
-    def create_waypoint(self, request, response):
+    def create_waypoint(self, request: CreateWaypoint.Request, response: CreateWaypoint.Response):
         '''
         Creates a new waypoint.
         '''
@@ -115,9 +118,10 @@ class Waypoints(Node):
             self.waypoint_list.append(new_waypoint)
             return response
         else:
-            self.get_logger().info(f"Cannot generate new waypoint: {request.waypoint_shortname}")
+            self.get_logger().info(f"Cannot generate new waypoint, position not set.")
             return response
-        
+
+
 def main():
     rclpy.init()
     node = Waypoints()

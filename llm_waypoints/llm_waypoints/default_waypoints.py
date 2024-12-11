@@ -1,13 +1,23 @@
+# lucas butler
 from geometry_msgs.msg import Pose, Point, Quaternion
 from llm_waypoints.waypoint import Waypoint
 
-def create_pose(x, y, z):
+def create_pose(x=0., y=0., z=0., a=0., b=0., c=0., d=0.):
     pose = Pose()
+
     point = Point()
     point.x = float(x)
     point.y = float(y)
     point.z = float(z)
+
+    orientation = Quaternion()
+    orientation.w = float(a)
+    orientation.x = float(b)
+    orientation.y = float(c)
+    orientation.z = float(d)
+
     pose.position = point
+    pose.orientation = orientation
 
     return pose
 
