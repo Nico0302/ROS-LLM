@@ -41,7 +41,7 @@ def generate_launch_description():
                 parameters=[{
                     "passiv_topics": [
                         "/imu.pose.pose.position:geometry_msgs/msg/PoseWithCovarianceStamped",
-                        "/waypoint:std_msgs/msg/String"
+                        "/waypoints:std_msgs/msg/String"
                     ]
                 }]
             ),

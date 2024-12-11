@@ -60,10 +60,6 @@ class ChatGPTNode(Node):
     def __init__(self):
         super().__init__("ChatGPT_node")
 
-        self.topic_context = TopicContext(self)
-
-        self.topic_context.subscribe_topics()
-
         # Initialization publisher
         self.initialization_publisher = self.create_publisher(
             String, "/llm_initialization_state", 0
@@ -95,6 +91,7 @@ class ChatGPTNode(Node):
         self.get_tool_descriptions_client = self.create_client(
             GetToolDescriptions, "/get_tool_descriptions"
         )
+        time.sleep(3)
         while not self.get_tool_descriptions_client.wait_for_service(timeout_sec=1.0):
             self.get_logger().info(
                 "ChatGPT Tool Description Server not available, waiting again..."
@@ -105,6 +102,11 @@ class ChatGPTNode(Node):
             self.get_tool_descriptions_request
         )
         self.get_tool_descriptions_future.add_done_callback(self.get_tool_descriptions_callback)
+
+
+        self.topic_context = TopicContext(self)
+
+        self.topic_context.subscribe_topics()
 
         # ChatGPT function call client
         # When function call is detected

@@ -73,7 +73,6 @@ class Topic(Tool):
         except Exception as e:
             print('Failed to get publisher names and types by node: {0}'.format(e))
             return []
-        print('Topics: {0}'.format(topics))
 
         for [topic_name, types] in topics:
             if not isinstance(types, list):

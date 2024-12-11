@@ -46,8 +46,3 @@ def test():
     end_pose.position = point
 
     print(waypoint.to_dict(end_pose))
-
-
-if __name__ == "__main__":
-
-    test()

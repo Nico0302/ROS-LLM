@@ -35,9 +35,12 @@ class Tools(Node):
         call_result = None
         try:
             call_result = self._call(request.tool.name, json.loads(request.tool.arguments))
+            self.get_logger().info(f'Call result: {call_result}')
         except Exception as e:
+            self.get_logger().error(f'Error calling tool {request.tool.name}: {e}')
             call_result = {"error": str(e)}
-        response.output = json.dumps(call_result, indent=2)
+        if call_result is not None:
+            response.output = json.dumps(call_result, indent=2)
         return response
 
     def get_tool_descriptions(self, request: GetToolDescriptions.Request, response: GetToolDescriptions.Response):
@@ -76,14 +79,18 @@ class Tools(Node):
     
     def _call(self, name: str, parameters: dict):
         result = self.tools[name].call(self, parameters)
+        # YOLO
+        return None
         if result is not None:
             return self._wait_for_response(result)
-        else:
-            return None
+
     
     def _wait_for_response(self, future):
-        rclpy.spin_until_future_complete(self, future)
-        return future.result()
+        while rclpy.ok():
+            rclpy.spin_once(self, timeout_sec=1)
+            self.get_logger().info(f'Waiting for response: {future.done()}')
+            if future.done():
+                return future.result()
 
 def run_call_tool():
     rclpy.init()

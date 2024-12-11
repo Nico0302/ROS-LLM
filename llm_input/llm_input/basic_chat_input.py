@@ -6,13 +6,16 @@ from threading import Thread
 class InputPublisher(Node):
     def __init__(self):
         super().__init__('chat_input')
-        self.publisher_ = self.create_publisher(String, "/llm_input_audio_to_text", 10)
+        self.publisher = self.create_publisher(String, "/llm_input_audio_to_text", 10)
+        self.subscriber = self.create_subscription(String, "/llm_feedback_to_user", self.listener_callback, 10)
 
     def publish_string(self, string_to_send):
         msg = String()
         msg.data = string_to_send
-        self.publisher_.publish(msg)  # Use publisher_ here
-        self.get_logger().info(f"Message published: {msg.data}")
+        self.publisher.publish(msg)  # Use publisher here
+
+    def listener_callback(self, msg):
+        print(f"AI: {msg.data}")
 
 
 def input_thread(input_publisher):

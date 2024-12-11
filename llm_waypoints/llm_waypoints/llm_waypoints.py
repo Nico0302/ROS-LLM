@@ -25,7 +25,8 @@ class Waypoints(Node):
         self.navigate_to_waypoint_srv = self.create_service(
             Nav2Waypoint, 
             'navigate_to_waypoint', 
-            self.navigate_to_waypoint)
+            self.navigate_to_waypoint
+        )
         
         # Create a new waypoint
         self.create_waypoint_srv = self.create_service(
@@ -116,6 +117,7 @@ class Waypoints(Node):
                 pose
             )
             self.waypoint_list.append(new_waypoint)
+            self.publish_waypoints()
             return response
         else:
             self.get_logger().info(f"Cannot generate new waypoint, position not set.")
@@ -126,8 +128,6 @@ def main():
     rclpy.init()
     node = Waypoints()
     rclpy.spin(node)
-
-
     rclpy.shutdown()
         
 if __name__ == '__main__':

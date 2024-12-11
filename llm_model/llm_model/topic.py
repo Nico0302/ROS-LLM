@@ -1,5 +1,6 @@
 from functools import reduce
 import importlib
+import json
 from rclpy.node import Node
 from rclpy.task import Future
 from rosidl_runtime_py import message_to_ordereddict
@@ -62,6 +63,7 @@ class Topic:
         if self.value is None:
             return None
         value = message_to_ordereddict(self.value)
+        print(json.dumps(value, indent=2))
         if len(self.path) > 0:
             value = reduce(lambda dct, key: dct[key], self.path, value) # type: ignore
         return value
