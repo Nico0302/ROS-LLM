@@ -8,6 +8,7 @@ import json
 from std_msgs.msg import String
 from llm_waypoints.default_waypoints import *
 from nav2_simple_commander.robot_navigator import BasicNavigator
+import os
 
 class Waypoints(Node):
     def __init__(self):
@@ -42,9 +43,13 @@ class Waypoints(Node):
             self.pose_listener_callback,
             10
         )
-        
-        # Default Waypoints
+
         self.waypoint_list = default_waypoints
+
+        self.waypoint_storage_file = "waypoint_storage.json"
+
+        if os.path.exists(self.waypoint_storage_file):
+            self.waypoint_list = self.load_waypoints_from_file()      # load the existing list of waypoints  
 
         # Stores current position of the robot
         self.position = None
@@ -117,19 +122,85 @@ class Waypoints(Node):
                 pose
             )
             self.waypoint_list.append(new_waypoint)
+            self.save_waypoints_to_file()               # Save the list of waypoints
             self.publish_waypoints()
             return response
         else:
             self.get_logger().info(f"Cannot generate new waypoint, position not set.")
             return response
-
-
-def main():
-    rclpy.init()
-    node = Waypoints()
-    rclpy.spin(node)
-    rclpy.shutdown()
         
-if __name__ == '__main__':
-    main()
+    def save_waypoints_to_file(self):
+        '''
+        Serialize Waypoints and save them to a JSON file.
+        '''
+        waypoints_dict = [wp.to_storage_dict() for wp in self.waypoint_list]  # Assuming pose is the robot's current position
+        with open(self.waypoint_storage_file, 'w') as file:
+            json.dump(waypoints_dict, file, indent=4)
 
+    def load_waypoints_from_file(self):
+        '''
+        Load Waypoints from a JSON file and deserialize them into Waypoint objects.
+        '''
+        with open(self.waypoint_storage_file, 'r') as file:
+            waypoints_dict = json.load(file)
+        
+        waypoints = []
+        for data in waypoints_dict:
+            pose = Pose()
+            waypoints.append(Waypoint.from_dict(data, pose))
+        
+        print(waypoints)
+        return waypoints
+    
+
+def test_storage():
+    # Initialize rclpy
+    rclpy.init(args=None)
+
+    # Create node instance
+    node = Waypoints()
+
+    pose = Pose()
+
+    pose.position.x = 7.
+    pose.position.y = 7.
+    pose.position.z = 7.
+
+    node.position = pose
+    node.save_waypoints_to_file()
+
+    # Now load from the file and check if the waypoint is correctly deserialized
+    node.load_waypoints_from_file()
+    for wp in node.waypoint_list:
+        print(f"Loaded waypoint: {wp.short_name}, {wp.description}, Location: {wp.location.position.x}, {wp.location.position.y}, {wp.location.position.z}")
+
+    # Spin the node to ensure any necessary callbacks (like pose updates) can run
+    # Since this is just a test, we'll spin for a short period
+    rclpy.spin_once(node, timeout_sec=1.0)
+
+    waypoint_request = CreateWaypoint.Request()
+    waypoint_request.waypoint_shortname = 'test'
+    waypoint_request.description = "test"
+
+    waypoint_response = CreateWaypoint.Response()
+
+    node.create_waypoint(waypoint_request, waypoint_response)
+
+    node.save_waypoints_to_file()
+    node.load_waypoints_from_file()
+    for wp in node.waypoint_list:
+        print(f"Loaded waypoint: {wp.short_name}, {wp.description}, Location: {wp.location.position.x}, {wp.location.position.y}, {wp.location.position.z}")
+
+
+    # Shutdown rclpy after the test is done
+    rclpy.shutdown()
+
+
+def main(args=None):
+    rclpy.init(args=args)
+    waypoints = Waypoints()
+    rclpy.spin(waypoints)
+    rclpy.shutdown()
+
+if __name__ == "__main__":
+    main()

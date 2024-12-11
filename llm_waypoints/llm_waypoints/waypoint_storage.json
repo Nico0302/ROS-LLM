@@ -1,0 +1,70 @@
+[
+    {
+        "short_name": "garbage_can",
+        "description": "A garbage can in the hallway",
+        "location": {
+            "position": {
+                "x": 3.0,
+                "y": 0.0,
+                "z": 4.0
+            },
+            "orientation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 0.0
+            }
+        }
+    },
+    {
+        "short_name": "table",
+        "description": "A table in the kitchen",
+        "location": {
+            "position": {
+                "x": 5.0,
+                "y": 3.0,
+                "z": 1.0
+            },
+            "orientation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 0.0
+            }
+        }
+    },
+    {
+        "short_name": "lamp",
+        "description": "A lamp in the living room",
+        "location": {
+            "position": {
+                "x": 7.0,
+                "y": 3.0,
+                "z": 4.0
+            },
+            "orientation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 0.0
+            }
+        }
+    },
+    {
+        "short_name": "test",
+        "description": "test",
+        "location": {
+            "position": {
+                "x": 7.0,
+                "y": 7.0,
+                "z": 7.0
+            },
+            "orientation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            }
+        }
+    }
+]
