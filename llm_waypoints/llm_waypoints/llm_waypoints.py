@@ -14,6 +14,9 @@ class Waypoints(Node):
     def __init__(self):
         super().__init__('llm_waypoints')
 
+        self.waypoint_storage_file = os.path.join("./src/ROS-LLM/llm_waypoints/llm_waypoints", "waypoint_storage.json")
+        self.get_logger().info(f"{self.waypoint_storage_file}")
+
         self.nav = BasicNavigator()
 
         # Shows available waypoints
@@ -46,10 +49,9 @@ class Waypoints(Node):
 
         self.waypoint_list = default_waypoints
 
-        self.waypoint_storage_file = "waypoint_storage.json"
-
         if os.path.exists(self.waypoint_storage_file):
-            self.waypoint_list = self.load_waypoints_from_file()      # load the existing list of waypoints  
+            self.waypoint_list = self.load_waypoints_from_file()      # load the existing list of waypoints 
+            self.get_logger().info(f"Found {len(self.waypoint_list)} waypoints.") 
 
         # Stores current position of the robot
         self.position = None

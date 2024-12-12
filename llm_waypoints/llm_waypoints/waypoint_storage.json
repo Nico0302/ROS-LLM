@@ -1,69 +1,120 @@
 [
     {
-        "short_name": "garbage_can",
-        "description": "A garbage can in the hallway",
+        "short_name": "small_bedroom",
+        "description": "Small bedroom at the top of the map",
         "location": {
             "position": {
-                "x": 3.0,
-                "y": 0.0,
-                "z": 4.0
+                "x": 7.8660558894864705,
+                "y": -1.1370308091354402,
+                "z": 0.0
             },
             "orientation": {
                 "x": 0.0,
                 "y": 0.0,
-                "z": 0.0,
-                "w": 0.0
+                "z": -0.12602265227969933,
+                "w": 0.9920273640945546
             }
         }
     },
     {
-        "short_name": "table",
-        "description": "A table in the kitchen",
+        "short_name": "dining_room",
+        "description": "A dining room with a table and chairs for meals.",
         "location": {
             "position": {
-                "x": 5.0,
-                "y": 3.0,
-                "z": 1.0
+                "x": 6.651719472264241,
+                "y": 3.212036400948715,
+                "z": 0.0
             },
             "orientation": {
                 "x": 0.0,
                 "y": 0.0,
-                "z": 0.0,
-                "w": 0.0
+                "z": -0.00041046550742492136,
+                "w": 0.99999991575903
             }
         }
     },
     {
-        "short_name": "lamp",
-        "description": "A lamp in the living room",
+        "short_name": "kitchen",
+        "description": "A kitchen equipped with appliances for cooking and food preparation.",
         "location": {
             "position": {
-                "x": 7.0,
-                "y": 3.0,
-                "z": 4.0
+                "x": 2.7372015755253183,
+                "y": 3.223667403147335,
+                "z": 0.0
             },
             "orientation": {
                 "x": 0.0,
                 "y": 0.0,
-                "z": 0.0,
-                "w": 0.0
+                "z": -0.14092530326331112,
+                "w": 0.9900202315610241
             }
         }
     },
     {
-        "short_name": "test",
-        "description": "test",
+        "short_name": "living_room",
+        "description": "A cozy living room with comfortable seating and entertainment options.",
         "location": {
             "position": {
-                "x": 7.0,
-                "y": 7.0,
-                "z": 7.0
+                "x": -0.8445940232035439,
+                "y": 3.238965632609556,
+                "z": 0.0
             },
             "orientation": {
                 "x": 0.0,
                 "y": 0.0,
-                "z": 0.0,
-                "w": 1.0
+                "z": 0.16846468774466572,
+                "w": 0.9857076894206985
+            }
+        }
+    },
+    {
+        "short_name": "master_bedroom",
+        "description": "The master bedroom featuring a large bed and storage space.",
+        "location": {
+            "position": {
+                "x": -4.391563488462855,
+                "y": 3.809067995602701,
+                "z": 0.0
+            },
+            "orientation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": -0.11956411446400032,
+                "w": 0.99282648158298
+            }
+        }
+    },
+    {
+        "short_name": "master_bathroom",
+        "description": "The master bathroom equipped with a shower, toilet, and sink.",
+        "location": {
+            "position": {
+                "x": -4.349960161773422,
+                "y": -0.5987094757295108,
+                "z": 0.0
+            },
+            "orientation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": -0.09758416182653577,
+                "w": 0.9952272762342341
+            }
+        }
+    },
+    {
+        "short_name": "entrance",
+        "description": "The entrance to the building.",
+        "location": {
+            "position": {
+                "x": 2.9554317878298395,
+                "y": -0.2566716100481108,
+                "z": 0.0
+            },
+            "orientation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": -0.3505149517225488,
+                "w": 0.936557135800555
             }
         }
     }
