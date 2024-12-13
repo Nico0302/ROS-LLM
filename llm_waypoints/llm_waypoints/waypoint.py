@@ -22,12 +22,12 @@ class Waypoint:
         return {
             'short_name': self.short_name,
             'description': self.description,
-            'location': self.pose_to_dict(self.location)  # Convert Pose to dictionary
+            'location': self.pose_to_dict(self.location)
         }
     
     def calc_distance(self, position: Pose):
         '''
-        Calculates the euclideans distance from the waypoint to the current location of the robot.
+        Calculates the euclidean distance from the waypoint to the current location of the robot.
         '''
         x = abs(position.position.x - self.location.position.x)
         y = abs(position.position.y - self.location.position.y)
