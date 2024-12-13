@@ -13,45 +13,23 @@ import os
 class Waypoints(Node):
     def __init__(self):
         super().__init__('llm_waypoints')
-
+    
         self.waypoint_storage_file = os.path.join("./src/ROS-LLM/llm_waypoints/llm_waypoints", "waypoint_storage.json")
         self.get_logger().info(f"{self.waypoint_storage_file}")
-
-        self.nav = BasicNavigator()
-
-        # Shows available waypoints
-        self.waypoints_publisher_ = self.create_publisher(
-            String, 
-            'waypoints', 
-            10)
-
-        # Navigate to a waypoint
-        self.navigate_to_waypoint_srv = self.create_service(
-            Nav2Waypoint, 
-            'navigate_to_waypoint', 
-            self.navigate_to_waypoint
-        )
-        
-        # Create a new waypoint
-        self.create_waypoint_srv = self.create_service(
-            CreateWaypoint,
-            'create_waypoint',
-            self.create_waypoint
-        )
-        
-        # For grabbing positional information
-        self.pose_subscription = self.create_subscription(
-            PoseWithCovarianceStamped,
-            "/amcl_pose",
-            self.pose_listener_callback,
-            10
-        )
-
         self.waypoint_list = default_waypoints
 
         if os.path.exists(self.waypoint_storage_file):
-            self.waypoint_list = self.load_waypoints_from_file()      # load the existing list of waypoints 
+            self.waypoint_list = self.load_waypoints_from_file()
             self.get_logger().info(f"Found {len(self.waypoint_list)} waypoints.") 
+
+        self.nav = BasicNavigator()
+
+        self.waypoints_publisher_ = self.create_publisher(String, 'waypoints', 10)
+        self.navigate_to_waypoint_srv = self.create_service(Nav2Waypoint, 'navigate_to_waypoint', self.navigate_to_waypoint)
+        self.create_waypoint_srv = self.create_service(CreateWaypoint, 'create_waypoint', self.create_waypoint)
+        
+        # For grabbing positional information
+        self.pose_subscription = self.create_subscription(PoseWithCovarianceStamped, '/amcl_pose', self.pose_listener_callback, 10)
 
         # Stores current position of the robot
         self.position = None
@@ -68,16 +46,11 @@ class Waypoints(Node):
         '''
         Searches the waypoint list for the short_name, if found, navigates to that position.
         '''
-        
-        # Find the waypoint by shortname
         waypoint = self._find_waypoint(request.waypoint_shortname)
-
         if not waypoint:
             self.get_logger().info("No waypoint found")
             return response
-
-        self.get_logger().info("Calling navigation client...")
-
+    
         # Create the target pose and send it to nav2
         pose_stamped = PoseStamped()
         pose_stamped.pose = waypoint.location
@@ -107,7 +80,7 @@ class Waypoints(Node):
         Recieves the position of the robot from nav2
         '''
         self.get_logger().info(f"Received pose: {msg.pose.pose}")
-        self.position = msg.pose.pose   # Traverse PoseWithCovarienceStamped -> PoseWithCovariance -> Pose
+        self.position = msg.pose.pose   # Traversal PoseWithCovarienceStamped -> PoseWithCovariance -> Pose
         assert isinstance(self.position, Pose)
         self.publish_waypoints()        # Update /waypoints after a new position is posted
 
@@ -117,14 +90,14 @@ class Waypoints(Node):
         '''
         if self.position is not None:
             self.get_logger().info(f"Creating new waypoint: {request.waypoint_shortname} {self.position}")
-            pose = self.position   # type Pose
+            pose = self.position   # type: Pose
             new_waypoint = Waypoint(
                 request.waypoint_shortname,
                 request.description,
                 pose
             )
             self.waypoint_list.append(new_waypoint)
-            self.save_waypoints_to_file()               # Save the list of waypoints
+            self.save_waypoints_to_file()
             self.publish_waypoints()
             return response
         else:
@@ -135,7 +108,7 @@ class Waypoints(Node):
         '''
         Serialize Waypoints and save them to a JSON file.
         '''
-        waypoints_dict = [wp.to_storage_dict() for wp in self.waypoint_list]  # Assuming pose is the robot's current position
+        waypoints_dict = [wp.to_storage_dict() for wp in self.waypoint_list]
         with open(self.waypoint_storage_file, 'w') as file:
             json.dump(waypoints_dict, file, indent=4)
 
@@ -151,7 +124,6 @@ class Waypoints(Node):
             pose = Pose()
             waypoints.append(Waypoint.from_dict(data, pose))
         
-        print(waypoints)
         return waypoints
     
 
@@ -159,25 +131,20 @@ def test_storage():
     # Initialize rclpy
     rclpy.init(args=None)
 
-    # Create node instance
     node = Waypoints()
-
     pose = Pose()
 
     pose.position.x = 7.
     pose.position.y = 7.
     pose.position.z = 7.
-
     node.position = pose
+    
     node.save_waypoints_to_file()
-
-    # Now load from the file and check if the waypoint is correctly deserialized
     node.load_waypoints_from_file()
+    
     for wp in node.waypoint_list:
         print(f"Loaded waypoint: {wp.short_name}, {wp.description}, Location: {wp.location.position.x}, {wp.location.position.y}, {wp.location.position.z}")
-
-    # Spin the node to ensure any necessary callbacks (like pose updates) can run
-    # Since this is just a test, we'll spin for a short period
+        
     rclpy.spin_once(node, timeout_sec=1.0)
 
     waypoint_request = CreateWaypoint.Request()
@@ -193,8 +160,6 @@ def test_storage():
     for wp in node.waypoint_list:
         print(f"Loaded waypoint: {wp.short_name}, {wp.description}, Location: {wp.location.position.x}, {wp.location.position.y}, {wp.location.position.z}")
 
-
-    # Shutdown rclpy after the test is done
     rclpy.shutdown()
 
 
